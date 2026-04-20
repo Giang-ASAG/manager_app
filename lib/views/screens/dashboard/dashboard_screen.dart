@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:manager/core/extensions/l10n_extension.dart';
@@ -22,60 +23,69 @@ class _DashboardScreenState extends State<DashboardScreen> {
     });
   }
 
+  Future<void> _onRefresh() async {
+    await context.read<DashboardViewModel>().loadDashboard();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: Consumer<DashboardViewModel>(
-        builder: (context, vm, _) {
-          return RefreshIndicator(
-            color: Theme.of(context).hintColor,
-            onRefresh: vm.loadDashboard,
-            child: CustomScrollView(
-              slivers: [
-                AppSliverAppBar(
-                  title: context.l10n.dashboard_text,
-                  showBackButton: false,
-                  height: 80,
-                  actions: [
-                    AppActions(),
-                    const SizedBox(width: 8),
-                    CircleAvatar(
-                      radius: 16,
-                      backgroundColor: Theme.of(context).cardColor,
-                      child: Text(
-                        'G',
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.onSurface,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ],
-                  bottom: null,
-                ),
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(16, 20, 16, 32),
-                  sliver: SliverList(
-                    delegate: SliverChildListDelegate([
-                      _buildSectionTitle(context.l10n.quick_actions),
-                      const SizedBox(height: 12),
-                      _buildQuickActionsGrid(),
-                      const SizedBox(height: 24),
-                      _buildSectionTitle(context.l10n.recent_actions),
-                      const SizedBox(height: 12),
-                    ]),
+      body: CustomScrollView(
+        physics: const BouncingScrollPhysics(),
+        slivers: [
+          // App Bar - Không rebuild theo VM
+          AppSliverAppBar(
+            title: context.l10n.dashboard_text,
+            showBackButton: false,
+            height: 80,
+            actions: [
+              AppActions(),
+              const SizedBox(width: 8),
+              CircleAvatar(
+                radius: 16,
+                backgroundColor: Theme.of(context).cardColor,
+                child: Text(
+                  'G',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
-              ],
+              ),
+            ],
+          ),
+
+          // Refresh Control
+          CupertinoSliverRefreshControl(onRefresh: _onRefresh),
+
+          // Nội dung chính - Chỉ rebuild khi VM thay đổi
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(16, 20, 16, 32),
+            sliver: Consumer<DashboardViewModel>(
+              builder: (context, vm, _) {
+                return SliverList(
+                  delegate: SliverChildListDelegate([
+                    _buildSectionTitle(context.l10n.quick_actions),
+                    const SizedBox(height: 12),
+                    _buildQuickActionsGrid(),
+                    const SizedBox(height: 24),
+                    _buildSectionTitle(context.l10n.recent_actions),
+                    const SizedBox(height: 12),
+
+                    // TODO: Thêm Recent Actions sau
+                    // vm.recentActivities.isEmpty
+                    //     ? _buildEmptyRecent()
+                    //     : _buildRecentList(vm.recentActivities),
+                  ]),
+                );
+              },
             ),
-          );
-        },
+          ),
+        ],
       ),
     );
   }
-
-  // ─── SECTIONS ──────────────────────────────────────────────────────────────
 
   Widget _buildSectionTitle(String title) {
     return Text(
@@ -89,8 +99,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  // ─── QUICK ACTIONS ─────────────────────────────────────────────────────────
-
+  // ─── QUICK ACTIONS GRID ───────────────────────────────────────────────────
   Widget _buildQuickActionsGrid() {
     final actions = [
       _ActionItem('Bán hàng', Icons.point_of_sale_rounded,
@@ -121,45 +130,69 @@ class _DashboardScreenState extends State<DashboardScreen> {
         childAspectRatio: 0.82,
       ),
       itemCount: actions.length,
-      itemBuilder: (context, i) => _buildActionTile(actions[i]),
+      itemBuilder: (context, index) => _buildActionTile(actions[index]),
     );
   }
 
   Widget _buildActionTile(_ActionItem item) {
-    return Material(
-      color: Theme.of(context).cardColor,
-      borderRadius: BorderRadius.circular(16),
-      child: InkWell(
+    return _QuickActionTile(item: item);
+  }
+}
+
+// ─── SUB WIDGET ─────────────────────────────────────────────────────────────
+
+class _QuickActionTile extends StatelessWidget {
+  final _ActionItem item;
+
+  const _QuickActionTile({super.key, required this.item});
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedScale(
+      scale: 1.0,
+      duration: const Duration(milliseconds: 120),
+      curve: Curves.easeOut,
+      child: Material(
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(16),
-        onTap: () => context.push(item.route),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: item.iconColor.withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(13),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () => context.push(item.route),
+          splashColor: item.iconColor.withOpacity(0.15),
+          highlightColor: item.iconColor.withOpacity(0.08),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: item.iconColor.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(13),
+                  ),
+                  child: Icon(
+                    item.icon,
+                    color: item.iconColor,
+                    size: 22,
+                  ),
                 ),
-                child: Icon(item.icon, color: item.iconColor, size: 22),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                item.label,
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  // ✅ Fix: dùng theme thay vì hardcode Color(0xFF3A3F5C)
-                  color: Theme.of(context).colorScheme.onSurface,
-                  height: 1.25,
+                const SizedBox(height: 8),
+                Text(
+                  item.label,
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: Theme.of(context).colorScheme.onSurface,
+                    height: 1.25,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -167,64 +200,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 }
 
-// ─── SUBWIDGETS ───────────────────────────────────────────────────────────────
-
-class _ShimmerBox extends StatefulWidget {
-  final double height;
-  final double radius;
-
-  const _ShimmerBox({required this.height, required this.radius});
-
-  @override
-  State<_ShimmerBox> createState() => _ShimmerBoxState();
-}
-
-class _ShimmerBoxState extends State<_ShimmerBox>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _ctrl;
-  late final Animation<double> _anim;
-
-  @override
-  void initState() {
-    super.initState();
-    _ctrl = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 1200))
-      ..repeat(reverse: true);
-    _anim = Tween<double>(begin: 0.4, end: 0.9).animate(_ctrl);
-  }
-
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _anim,
-      builder: (_, __) => Container(
-        height: widget.height,
-        decoration: BoxDecoration(
-          color: Theme.of(context)
-              .colorScheme
-              .onSurface
-              .withOpacity(0.05 * _anim.value),
-          borderRadius: BorderRadius.circular(widget.radius),
-        ),
-      ),
-    );
-  }
-}
-
-// ─── DATA MODELS ─────────────────────────────────────────────────────────────
+// ─── MODELS ─────────────────────────────────────────────────────────────────
 
 class _ActionItem {
   final String label;
   final IconData icon;
   final Color iconColor;
-
-  // ✅ Bỏ bgColor — không dùng ở đâu
   final String route;
 
   const _ActionItem(this.label, this.icon, this.iconColor, this.route);

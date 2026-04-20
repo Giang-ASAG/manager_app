@@ -10,9 +10,10 @@ class ThemeViewModel extends ChangeNotifier {
 
   bool get isDark => _themeMode == ThemeMode.dark;
 
-  ThemeViewModel() {
-    loadTheme(); // 👈 load khi khởi tạo
-  }
+  ThemeViewModel(bool? isDark)
+      : _themeMode = (isDark == null)
+            ? ThemeMode.light
+            : (isDark ? ThemeMode.dark : ThemeMode.light);
 
   Future<void> loadTheme() async {
     final prefs = await SharedPreferences.getInstance();

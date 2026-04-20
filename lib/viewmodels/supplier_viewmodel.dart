@@ -41,14 +41,16 @@ class SupplierViewmodel extends ChangeNotifier {
       notifyListeners();
     }
   }
-  Future<void> deleteSupplier(int id) async {
+  Future<bool> deleteSupplier(int id) async {
     try {
       await _repo.deleteSupplier(id);
       suppliers.removeWhere((e) => e.id == id);
       notifyListeners();
+      return true;
     } catch (e) {
       error = e.toString();
       notifyListeners();
+      return false;
     }
   }
 

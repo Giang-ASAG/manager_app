@@ -11,6 +11,7 @@ import 'package:manager/views/widgets/app_sliver_app_bar.dart';
 import 'package:manager/views/widgets/shared/app_summary_card.dart';
 import 'package:manager/views/widgets/shared/app_add_button.dart';
 import 'package:rflutter_alert/rflutter_alert.dart';
+import 'package:flutter/cupertino.dart';
 
 class CustomerListScreen extends StatefulWidget {
   const CustomerListScreen({super.key});
@@ -55,23 +56,32 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
           final filtered = query.isEmpty
               ? vm.customers
               : vm.customers.where((c) {
-                  return c.name.toLowerCase().contains(query) ||
-                      (c.phone?.contains(query) ?? false) ||
-                      (c.email?.toLowerCase().contains(query) ?? false);
-                }).toList();
+            return c.name.toLowerCase().contains(query) ||
+                (c.phone?.contains(query) ?? false) ||
+                (c.email?.toLowerCase().contains(query) ?? false);
+          }).toList();
 
           return CustomScrollView(
+            physics: const BouncingScrollPhysics(),   // Quan trọng cho Cupertino refresh mượt
             slivers: [
-              // ==================== HEADER ====================
+              // ==================== HEADER (Pinned) ====================
               AppSliverAppBar(
                 title: 'Khách hàng',
                 showBackButton: true,
                 height: 150,
                 actions: [
                   AppAddButton(
-                      onPressed: () => context.push(AppRoutes.customerAdd)),
+                    onPressed: () => context.push(AppRoutes.customerAdd),
+                  ),
                 ],
                 bottom: AppSearchField(controller: searchController),
+              ),
+
+              // ==================== PULL TO REFRESH (iOS Style) ====================
+              CupertinoSliverRefreshControl(
+                onRefresh: () async {
+                  await context.read<CustomerViewmodel>().fetchCustomers();
+                },
               ),
 
               // ==================== CONTENT ====================
@@ -129,13 +139,15 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
               context: context,
               onCancelPressed: () {},
               onOkPressed: () async {
-                final b = await context
+                final success = await context
                     .read<CustomerViewmodel>()
                     .deleteCustomer(customer.id);
-                if (!b) {
-                  AppSnackbar.showSuccess(context, "Xóa thất bại");
+                if (success) {
+                  AppSnackbar.showSuccess(context, "Xóa thành công");
+                } else {
+                  AppSnackbar.showError(
+                      context, "Xóa thất bại");
                 }
-                AppSnackbar.showSuccess(context, "Xóa thành công");
               },
               type: AlertType.warning,
               title: "Cảnh báo",

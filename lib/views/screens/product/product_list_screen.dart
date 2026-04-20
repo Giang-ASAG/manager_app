@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart'; // ← Thêm import này
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -10,7 +11,6 @@ import 'package:manager/views/widgets/app_sliver_app_bar.dart';
 import 'package:manager/views/widgets/app_snackbar.dart';
 import 'package:manager/views/widgets/custom_popup.dart';
 import 'package:manager/views/widgets/shared/app_add_button.dart';
-import 'package:manager/views/widgets/shared/app_summary_card.dart';
 import 'package:provider/provider.dart';
 import 'package:rflutter_alert/rflutter_alert.dart';
 
@@ -27,15 +27,11 @@ class _ProductListScreenState extends State<ProductListScreen> {
   @override
   void initState() {
     super.initState();
-    // Fetch data khi mở màn hình (dùng addPostFrameCallback để tránh lỗi build)
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<ProductViewModel>().fetchProducts();
     });
 
-    // Chỉ cần setState để UI build lại mỗi khi người dùng gõ phím
-    searchController.addListener(() {
-      setState(() {});
-    });
+    searchController.addListener(() => setState(() {}));
   }
 
   @override
@@ -57,32 +53,40 @@ class _ProductListScreenState extends State<ProductListScreen> {
             return const Center(child: CircularProgressIndicator());
           }
 
-          // LỌC DỮ LIỆU TRỰC TIẾP TẠI ĐÂY
-          // Luôn đồng bộ với vm.products mới nhất
           final query = searchController.text.trim().toLowerCase();
           final filteredProducts = query.isEmpty
               ? vm.products
-              : vm.products.where((p) {
-                  return p.name.toLowerCase().contains(query);
-                }).toList();
+              : vm.products
+                  .where((p) => p.name.toLowerCase().contains(query))
+                  .toList();
 
           return CustomScrollView(
+            physics: const BouncingScrollPhysics(),
+            // Quan trọng cho refresh mượt
             slivers: [
+              // ==================== APP BAR ====================
               AppSliverAppBar(
-                  title: context.l10n.product,
-                  showBackButton: true,
-                  height: 150,
-                  actions: [
-                    AppAddButton(
-                      onPressed: () => context.push(AppRoutes.productAdd),
-                    ),
-                  ],
-                  bottom: AppSearchField(controller: searchController)),
+                title: context.l10n.product,
+                showBackButton: true,
+                height: 150,
+                actions: [
+                  AppAddButton(
+                    onPressed: () => context.push(AppRoutes.productAdd),
+                  ),
+                ],
+                bottom: AppSearchField(controller: searchController),
+              ),
+
+              // ==================== CUPERTINO REFRESH ====================
+              CupertinoSliverRefreshControl(
+                onRefresh: _onRefresh,
+              ),
+
+              // ==================== CONTENT ====================
               SliverPadding(
                 padding: const EdgeInsets.fromLTRB(16, 24, 16, 80),
                 sliver: SliverList(
                   delegate: SliverChildListDelegate([
-                    // Truyền số lượng vào
                     const SizedBox(height: 10),
                     Text(
                       '${context.l10n.product_list} (${filteredProducts.length})',
@@ -94,7 +98,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                     if (filteredProducts.isEmpty)
                       _buildEmptySearchResult()
                     else
-                      ...filteredProducts.map(_buildProductCard),
+                      ...filteredProducts.map((p) => _buildProductCard(p)),
                   ]),
                 ),
               ),
@@ -105,12 +109,16 @@ class _ProductListScreenState extends State<ProductListScreen> {
     );
   }
 
+  // Hàm refresh riêng
+  Future<void> _onRefresh() async {
+    await context.read<ProductViewModel>().fetchProducts();
+  }
+
   // ==================== PRODUCT CARD ====================
   Widget _buildProductCard(Product p) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
 
-    // Format giá tiền (Ví dụ: 100.000 đ)
     final priceFormatter = NumberFormat("#,###", "vi_VN");
     final String formattedPrice = "${priceFormatter.format(p.sellingPrice)} đ";
 
@@ -118,7 +126,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: cs.surface,
-        borderRadius: BorderRadius.circular(24), // Bo góc lớn hiện đại
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(color: cs.outlineVariant.withOpacity(0.4)),
         boxShadow: [
           BoxShadow(
@@ -131,11 +139,12 @@ class _ProductListScreenState extends State<ProductListScreen> {
       child: InkWell(
         borderRadius: BorderRadius.circular(24),
         onTap: () => context.push(AppRoutes.productDetail, extra: p),
+        onLongPress: () => _showDeleteDialog(p), // Thêm long press hỗ trợ
         child: Padding(
           padding: const EdgeInsets.all(12),
           child: Row(
             children: [
-              // 1. Hình ảnh hoặc Icon đại diện
+              // Ảnh / Icon
               Container(
                 width: 64,
                 height: 64,
@@ -143,12 +152,15 @@ class _ProductListScreenState extends State<ProductListScreen> {
                   color: cs.primaryContainer.withOpacity(0.4),
                   borderRadius: BorderRadius.circular(16),
                 ),
-                child: Icon(Icons.inventory_2_rounded,
-                    color: cs.primary, size: 28),
+                child: Icon(
+                  Icons.inventory_2_rounded,
+                  color: cs.primary,
+                  size: 28,
+                ),
               ),
               const SizedBox(width: 16),
 
-              // 2. Thông tin chính
+              // Thông tin
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -165,7 +177,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                     const SizedBox(height: 4),
                     Row(
                       children: [
-                        // Badge Đơn vị
+                        // Đơn vị
                         Container(
                           padding: const EdgeInsets.symmetric(
                               horizontal: 6, vertical: 2),
@@ -197,7 +209,6 @@ class _ProductListScreenState extends State<ProductListScreen> {
                       ],
                     ),
                     const SizedBox(height: 8),
-                    // Giá bán
                     Text(
                       formattedPrice,
                       style: theme.textTheme.titleMedium?.copyWith(
@@ -209,56 +220,44 @@ class _ProductListScreenState extends State<ProductListScreen> {
                 ),
               ),
 
-              // 3. Nút thao tác
-              Column(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  PopupMenuButton<String>(
-                    icon: Icon(Icons.more_vert_rounded, color: cs.outline),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16)),
-                    onSelected: (value) {
-                      if (value == 'delete') {
-                        showPopup(
-                            context: context,
-                            onCancelPressed: () {},
-                            onOkPressed: () {
-                              context
-                                  .read<ProductViewModel>()
-                                  .deleteProduct(p.id!);
-                              AppSnackbar.showSuccess(
-                                  context, "Xóa thành công");
-                            },
-                            type: AlertType.warning,
-                            title: "Cảnh báo",
-                            content: "Bạn có muốn xóa sản phẩm này không?");
-                      }
-                    },
-                    itemBuilder: (_) => [
-                      PopupMenuItem(
-                        value: 'edit',
-                        child: Row(
-                          children: [
-                            Icon(Icons.edit_outlined, size: 18),
-                            SizedBox(width: 8),
-                            Text(context.l10n.common_edit),
-                          ],
+              // Menu hành động
+              PopupMenuButton<String>(
+                icon: Icon(Icons.more_vert_rounded, color: cs.outline),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                onSelected: (value) {
+                  if (value == 'delete') {
+                    _showDeleteDialog(p);
+                  } else if (value == 'edit') {
+                    // TODO: Điều hướng chỉnh sửa
+                    // context.push(AppRoutes.productEdit, extra: p);
+                  }
+                },
+                itemBuilder: (_) => [
+                  PopupMenuItem(
+                    value: 'edit',
+                    child: Row(
+                      children: [
+                        Icon(Icons.edit_outlined, size: 18, color: cs.primary),
+                        const SizedBox(width: 8),
+                        Text(context.l10n.common_edit),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: 'delete',
+                    child: Row(
+                      children: [
+                        Icon(Icons.delete_outline_rounded,
+                            size: 18, color: cs.error),
+                        const SizedBox(width: 8),
+                        Text(
+                          context.l10n.common_delete,
+                          style: TextStyle(color: cs.error),
                         ),
-                      ),
-                      PopupMenuItem(
-                        value: 'delete',
-                        child: Row(
-                          children: [
-                            Icon(Icons.delete_outline_rounded,
-                                size: 18, color: Colors.red),
-                            SizedBox(width: 8),
-                            Text(context.l10n.common_delete,
-                                style: TextStyle(color: Colors.red)),
-                          ],
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ],
               ),
@@ -269,11 +268,33 @@ class _ProductListScreenState extends State<ProductListScreen> {
     );
   }
 
-  // ==================== EMPTY SEARCH RESULT ====================
+  // Dialog xác nhận xóa (tách riêng cho sạch và dễ quản lý)
+  void _showDeleteDialog(Product p) {
+    showPopup(
+      context: context,
+      type: AlertType.warning,
+      title: "Cảnh báo",
+      content: "Bạn có muốn xóa sản phẩm này không?",
+      onCancelPressed: () {},
+      onOkPressed: () async {
+        final success =
+            await context.read<ProductViewModel>().deleteProduct(p.id!);
+
+        if (success) {
+          AppSnackbar.showSuccess(context, "Xóa thành công");
+        } else {
+          AppSnackbar.showError(
+              context, "Xóa thất bại"); // Nên có hàm showError
+        }
+      },
+    );
+  }
+
+  // ==================== EMPTY STATE ====================
   Widget _buildEmptySearchResult() {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 60),
+        padding: const EdgeInsets.symmetric(vertical: 80),
         child: Column(
           children: [
             Icon(

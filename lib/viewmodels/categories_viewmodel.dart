@@ -47,27 +47,7 @@ class CategoriesViewModel extends ChangeNotifier {
     }
   }
 
-// ================= UPDATE =================
-// Future<bool> updateCategory(int id, Category category) async {
-//   try {
-//     isLoading = true;
-//     notifyListeners();
-//
-//     final updated = await _repo.updateCategory(id, category);
-//
-//     final index = categories.indexWhere((e) => e.id == id);
-//     if (index != -1) {
-//       categories[index] = updated;
-//     }
-//     return true;
-//   } catch (e) {
-//     error = e.toString();
-//     return false;
-//   } finally {
-//     isLoading = false;
-//     notifyListeners();
-//   }
-// }
+
 
 // ================= DELETE =================
   Future<bool> deleteCategory(int id) async {

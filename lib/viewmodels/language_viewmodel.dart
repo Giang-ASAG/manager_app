@@ -8,8 +8,9 @@ class LanguageViewModel extends ChangeNotifier {
 
   static const _key = "language";
 
-  LanguageViewModel() {
-    loadLanguage();
+  LanguageViewModel(String? initialCode)
+      : _locale = Locale(initialCode ?? 'vi') { // Mặc định là 'vi' nếu null
+    // Bạn không cần gọi loadLanguage() ở đây nữa vì đã có giá trị khởi tạo
   }
 
   Future<void> loadLanguage() async {

@@ -15,29 +15,61 @@ import 'package:manager/viewmodels/product_viewmodel.dart';
 import 'package:manager/viewmodels/supplier_viewmodel.dart';
 import 'package:manager/viewmodels/theme_viewmodel.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+// Future<void> main() async {
+//   WidgetsFlutterBinding.ensureInitialized();
+//
+//   await dotenv.load(fileName: ".env");
+//
+//   setupLocator();
+//
+//   runApp(const MyApp());
+// }
+// main.dart
 
 Future<void> main() async {
+  // 1. Đảm bảo Flutter framework đã sẵn sàng
   WidgetsFlutterBinding.ensureInitialized();
 
+  // 2. Load các cấu hình cơ bản (DotEnv, DI)
   await dotenv.load(fileName: ".env");
-
   setupLocator();
 
-  runApp(const MyApp());
+  // 3. Load SharedPreferences ngay tại đây để dùng cho Theme và Language
+  final prefs = await SharedPreferences.getInstance();
+  final bool? isDark = prefs.getBool("theme_mode");
+  final String? languageCode =
+      prefs.getString("language_code"); // Giả sử bạn có key này
+
+  runApp(
+    MyApp(
+      initialIsDark: isDark,
+      initialLanguageCode: languageCode,
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final bool? initialIsDark;
+  final String? initialLanguageCode;
+
+  const MyApp({
+    super.key,
+    this.initialIsDark,
+    this.initialLanguageCode,
+  });
 
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(
-          create: (_) => ThemeViewModel()..loadTheme(),
+          // Truyền giá trị đã load từ main vào ViewModel constructor
+          create: (_) => ThemeViewModel(initialIsDark),
         ),
         ChangeNotifierProvider(
-          create: (_) => LanguageViewModel()..loadLanguage(),
+          create: (_) => LanguageViewModel(initialLanguageCode),
         ),
         ChangeNotifierProvider(
           create: (_) => getIt<AuthViewModel>(),

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:manager/data/models/product.dart';
 import 'package:manager/data/repositories/product_repository.dart';
 
-
 class ProductViewModel extends ChangeNotifier {
   final ProductRepository _repo;
 
@@ -69,15 +68,16 @@ class ProductViewModel extends ChangeNotifier {
   }
 
   // ================= DELETE =================
-  Future<void> deleteProduct(int id) async {
+  Future<bool> deleteProduct(int id) async {
     try {
       await _repo.deleteProduct(id);
       products.removeWhere((e) => e.id == id);
       notifyListeners();
-
+      return true;
     } catch (e) {
       error = e.toString();
       notifyListeners();
+      return false;
     }
   }
 }

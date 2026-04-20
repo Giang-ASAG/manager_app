@@ -1,14 +1,15 @@
+import 'package:flutter/cupertino.dart'; // ← Thêm import này
 import 'package:flutter/material.dart';
-import 'package:manager/core/router/app_routes.dart';
-import 'package:manager/views/widgets/app_search_field.dart';
-import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
+import 'package:manager/core/router/app_routes.dart';
 import 'package:manager/data/models/invoice.dart';
 import 'package:manager/viewmodels/invoice_viewmodel.dart';
+import 'package:manager/views/widgets/app_search_field.dart';
 import 'package:manager/views/widgets/app_sliver_app_bar.dart';
 import 'package:manager/views/widgets/shared/app_summary_card.dart';
 import 'package:manager/views/widgets/shared/app_add_button.dart';
-import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 
 class InvoiceListScreen extends StatefulWidget {
   const InvoiceListScreen({super.key});
@@ -62,17 +63,28 @@ class _InvoiceListScreenState extends State<InvoiceListScreen> {
               filtered.fold(0.0, (sum, item) => sum + item.total);
 
           return CustomScrollView(
+            physics: const BouncingScrollPhysics(),
+            // Bắt buộc cho Cupertino refresh
             slivers: [
+              // ==================== APP BAR ====================
               AppSliverAppBar(
                 title: 'Hóa đơn',
                 showBackButton: false,
                 height: 150,
                 actions: [
                   AppAddButton(
-                      onPressed: () => context.push(AppRoutes.invoiceAdd)),
+                    onPressed: () => context.push(AppRoutes.invoiceAdd),
+                  ),
                 ],
                 bottom: AppSearchField(controller: searchController),
               ),
+
+              // ==================== CUPERTINO REFRESH CONTROL ====================
+              CupertinoSliverRefreshControl(
+                onRefresh: _onRefresh,
+              ),
+
+              // ==================== CONTENT ====================
               SliverPadding(
                 padding: const EdgeInsets.fromLTRB(16, 24, 16, 80),
                 sliver: SliverList(
@@ -115,24 +127,12 @@ class _InvoiceListScreenState extends State<InvoiceListScreen> {
     );
   }
 
-  Widget _buildSearchField(ColorScheme cs) {
-    return Container(
-      decoration: BoxDecoration(
-        color: cs.surface.withOpacity(0.95),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: TextField(
-        controller: searchController,
-        decoration: InputDecoration(
-          hintText: "Tìm số hóa đơn hoặc khách hàng...",
-          prefixIcon: Icon(Icons.search, color: cs.primary),
-          border: InputBorder.none,
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-        ),
-      ),
-    );
+  // Hàm refresh riêng
+  Future<void> _onRefresh() async {
+    await context.read<InvoiceViewmodel>().fetchInvoices();
   }
+
+  // ─── WIDGETS ───────────────────────────────────────────────────────────────
 
   Widget _buildSectionTitle(ThemeData theme, int count) {
     return Text(
@@ -150,12 +150,16 @@ class _InvoiceListScreenState extends State<InvoiceListScreen> {
         color: cs.surface,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          )
         ],
       ),
       child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        // onTap: () => context.push('/invoices/detail', extra: invoice),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         onTap: () => context.push(AppRoutes.invoiceDetail, extra: invoice.id),
         leading: Container(
           padding: const EdgeInsets.all(10),
@@ -170,8 +174,9 @@ class _InvoiceListScreenState extends State<InvoiceListScreen> {
             Expanded(
               child: Text(
                 invoice.invoiceNumber,
-                style: theme.textTheme.titleMedium
-                    ?.copyWith(fontWeight: FontWeight.bold),
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
             _buildStatusBadge(invoice.status, statusColor),
@@ -183,8 +188,9 @@ class _InvoiceListScreenState extends State<InvoiceListScreen> {
             const SizedBox(height: 4),
             Text(
               invoice.customerName,
-              style:
-                  theme.textTheme.bodyMedium?.copyWith(color: Colors.grey[700]),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: cs.onSurfaceVariant,
+              ),
             ),
             const SizedBox(height: 2),
             Text(
@@ -200,12 +206,19 @@ class _InvoiceListScreenState extends State<InvoiceListScreen> {
             Text(
               '${currencyFormat.format(invoice.total)} đ',
               style: TextStyle(
-                  color: cs.primary, fontWeight: FontWeight.bold, fontSize: 16),
+                color: cs.primary,
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
             ),
             if (invoice.balanceDue > 0)
               Text(
                 'Còn nợ: ${currencyFormat.format(invoice.balanceDue)}',
-                style: const TextStyle(color: Colors.red, fontSize: 11),
+                style: const TextStyle(
+                  color: Colors.red,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
           ],
         ),
@@ -221,9 +234,12 @@ class _InvoiceListScreenState extends State<InvoiceListScreen> {
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
-        status,
-        style:
-            TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold),
+        status.toUpperCase(),
+        style: TextStyle(
+          color: color,
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+        ),
       ),
     );
   }
@@ -244,15 +260,17 @@ class _InvoiceListScreenState extends State<InvoiceListScreen> {
   }
 
   Widget _buildEmptyState() {
-    return Center(
+    return const Center(
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 60),
+        padding: EdgeInsets.symmetric(vertical: 80),
         child: Column(
           children: [
-            Icon(Icons.receipt_outlined, size: 64, color: Colors.grey[300]),
-            const SizedBox(height: 16),
-            const Text("Không tìm thấy hóa đơn nào",
-                style: TextStyle(color: Colors.grey)),
+            Icon(Icons.receipt_outlined, size: 64, color: Colors.grey),
+            SizedBox(height: 16),
+            Text(
+              "Không tìm thấy hóa đơn nào",
+              style: TextStyle(color: Colors.grey),
+            ),
           ],
         ),
       ),

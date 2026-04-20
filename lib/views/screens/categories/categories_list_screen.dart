@@ -1,11 +1,12 @@
+import 'package:flutter/cupertino.dart'; // ← Thêm import này
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:manager/core/extensions/l10n_extension.dart';
 import 'package:manager/core/router/app_routes.dart';
 import 'package:manager/views/widgets/app_search_field.dart';
 import 'package:manager/views/widgets/app_snackbar.dart';
 import 'package:manager/views/widgets/custom_popup.dart';
 import 'package:provider/provider.dart';
-import 'package:go_router/go_router.dart';
 import 'package:manager/viewmodels/categories_viewmodel.dart';
 import 'package:manager/views/widgets/app_sliver_app_bar.dart';
 import 'package:manager/views/widgets/shared/app_summary_card.dart';
@@ -28,6 +29,8 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<CategoriesViewModel>().fetchCategories();
     });
+
+    // Search listener
     searchController.addListener(() => setState(() {}));
   }
 
@@ -58,17 +61,28 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
                   .toList();
 
           return CustomScrollView(
+            physics: const BouncingScrollPhysics(),
+            // Quan trọng cho Cupertino refresh
             slivers: [
+              // ==================== APP BAR ====================
               AppSliverAppBar(
                 title: context.l10n.category,
                 showBackButton: true,
                 height: 150,
                 actions: [
                   AppAddButton(
-                      onPressed: () => context.push(AppRoutes.categoryAdd)),
+                    onPressed: () => context.push(AppRoutes.categoryAdd),
+                  ),
                 ],
                 bottom: AppSearchField(controller: searchController),
               ),
+
+              // ==================== CUPERTINO REFRESH ====================
+              CupertinoSliverRefreshControl(
+                onRefresh: _onRefresh,
+              ),
+
+              // ==================== CONTENT ====================
               SliverPadding(
                 padding: const EdgeInsets.fromLTRB(16, 24, 16, 80),
                 sliver: SliverList(
@@ -90,34 +104,23 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
     );
   }
 
-  Widget _buildSearchField(ColorScheme cs) {
-    return Container(
-      decoration: BoxDecoration(
-        color: cs.surface.withOpacity(0.95),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: TextField(
-        controller: searchController,
-        decoration: InputDecoration(
-          hintText: context.l10n.common_search,
-          prefixIcon: Icon(Icons.search, color: cs.primary),
-          border: InputBorder.none,
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-        ),
-      ),
-    );
+  // Hàm refresh riêng - sạch sẽ và dễ quản lý
+  Future<void> _onRefresh() async {
+    await context.read<CategoriesViewModel>().fetchCategories();
   }
+
+  // ─── WIDGETS ───────────────────────────────────────────────────────────────
 
   Widget _buildSectionTitle(ThemeData theme, int count) {
     return Text(
       '${context.l10n.category_list} ($count)',
-      style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+      style: theme.textTheme.titleMedium?.copyWith(
+        fontWeight: FontWeight.bold,
+      ),
     );
   }
 
   Widget _buildCategoryCard(dynamic category, ColorScheme cs, ThemeData theme) {
-    // Định nghĩa màu sắc cho trạng thái
     final bool isActive = category.status?.toLowerCase() == 'active';
     final Color statusColor = isActive ? Colors.green : cs.error;
 
@@ -125,7 +128,7 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: cs.surface,
-        borderRadius: BorderRadius.circular(24), // Bo góc mềm mại hơn
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(color: cs.outlineVariant.withOpacity(0.5)),
         boxShadow: [
           BoxShadow(
@@ -138,8 +141,9 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(24),
         child: Theme(
-          data:
-              theme.copyWith(splashColor: cs.primaryContainer.withOpacity(0.3)),
+          data: theme.copyWith(
+            splashColor: cs.primaryContainer.withOpacity(0.3),
+          ),
           child: ListTile(
             contentPadding:
                 const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -200,24 +204,31 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
             trailing: PopupMenuButton<String>(
               icon: Icon(Icons.more_vert_rounded, color: cs.onSurfaceVariant),
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16)),
-              onSelected: (val) {
-                if (val == 'edit') {
-                  // Điều hướng sửa
-                } else if (val == 'delete') {
-                  showPopup(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              onSelected: (val) async {
+                if (val == 'delete') {
+                  final confirmed = await showPopup(
                     context: context,
                     type: AlertType.warning,
                     title: "Cảnh báo",
                     content: "Bạn có muốn xóa danh mục này không?",
                     onCancelPressed: () {},
-                    onOkPressed: () {
-                      context
+                    onOkPressed: () async {
+                      final success = await context
                           .read<CategoriesViewModel>()
                           .deleteCategory(category.id!);
-                      AppSnackbar.showSuccess(context, "Xóa thành công");
-                    },
+                      if (success) {
+                        AppSnackbar.showSuccess(context, "Xóa thành công");
+                      } else {
+                        AppSnackbar.showError(
+                            context, "Xóa thất bại"); // Nên có hàm showError
+                      }
+                    }, // sẽ xử lý sau khi confirm
                   );
+                } else if (val == 'edit') {
+                  // TODO: Điều hướng đến trang chỉnh sửa
+                  // context.push(AppRoutes.categoryEdit, extra: category);
                 }
               },
               itemBuilder: (_) => [
@@ -253,8 +264,17 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
   Widget _buildEmptyState() {
     return const Center(
       child: Padding(
-        padding: EdgeInsets.symmetric(vertical: 60),
-        child: Text("Không tìm thấy danh mục nào"),
+        padding: EdgeInsets.symmetric(vertical: 80),
+        child: Column(
+          children: [
+            Icon(Icons.category_outlined, size: 64, color: Colors.grey),
+            SizedBox(height: 16),
+            Text(
+              "Không tìm thấy danh mục nào",
+              style: TextStyle(color: Colors.grey),
+            ),
+          ],
+        ),
       ),
     );
   }
