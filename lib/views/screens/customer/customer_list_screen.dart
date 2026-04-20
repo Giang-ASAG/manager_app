@@ -1,0 +1,332 @@
+import 'package:flutter/material.dart';
+import 'package:manager/core/router/app_routes.dart';
+import 'package:manager/views/widgets/app_search_field.dart';
+import 'package:manager/views/widgets/app_snackbar.dart';
+import 'package:manager/views/widgets/custom_popup.dart';
+import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
+import 'package:manager/data/models/customer.dart';
+import 'package:manager/viewmodels/customer_viewmodel.dart';
+import 'package:manager/views/widgets/app_sliver_app_bar.dart';
+import 'package:manager/views/widgets/shared/app_summary_card.dart';
+import 'package:manager/views/widgets/shared/app_add_button.dart';
+import 'package:rflutter_alert/rflutter_alert.dart';
+
+class CustomerListScreen extends StatefulWidget {
+  const CustomerListScreen({super.key});
+
+  @override
+  State<CustomerListScreen> createState() => _CustomerListScreenState();
+}
+
+class _CustomerListScreenState extends State<CustomerListScreen> {
+  final TextEditingController searchController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    // Gọi API lấy danh sách khách hàng khi vào trang
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<CustomerViewmodel>().fetchCustomers();
+    });
+    searchController.addListener(() => setState(() {}));
+  }
+
+  @override
+  void dispose() {
+    searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
+    return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
+      body: Consumer<CustomerViewmodel>(
+        builder: (_, vm, __) {
+          if (vm.isLoading && vm.customers.isEmpty) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          final query = searchController.text.trim().toLowerCase();
+          final filtered = query.isEmpty
+              ? vm.customers
+              : vm.customers.where((c) {
+                  return c.name.toLowerCase().contains(query) ||
+                      (c.phone?.contains(query) ?? false) ||
+                      (c.email?.toLowerCase().contains(query) ?? false);
+                }).toList();
+
+          return CustomScrollView(
+            slivers: [
+              // ==================== HEADER ====================
+              AppSliverAppBar(
+                title: 'Khách hàng',
+                showBackButton: true,
+                height: 150,
+                actions: [
+                  AppAddButton(
+                      onPressed: () => context.push(AppRoutes.customerAdd)),
+                ],
+                bottom: AppSearchField(controller: searchController),
+              ),
+
+              // ==================== CONTENT ====================
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(16, 24, 16, 80),
+                sliver: SliverList(
+                  delegate: SliverChildListDelegate([
+                    // Thống kê nhanh
+                    AppSummaryCard(
+                      label: "Tổng số khách hàng",
+                      value: "${filtered.length}",
+                      icon: Icons.people_alt_outlined,
+                      color: cs.primary,
+                    ),
+                    const SizedBox(height: 10),
+
+                    if (filtered.isEmpty)
+                      _buildEmptyState()
+                    else
+                      ...filtered.map((c) => _buildCustomerCard(c, cs, theme)),
+                  ]),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildCustomerCard(
+      Customer customer, ColorScheme cs, ThemeData theme) {
+    final bool isActive = customer.status.toLowerCase() == 'active';
+    final Color statusColor = isActive ? Colors.teal : cs.outline;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 14),
+      decoration: BoxDecoration(
+        color: cs.surface,
+        borderRadius: BorderRadius.circular(24), // Bo góc sâu kiểu hiện đại
+        border: Border.all(color: cs.outlineVariant.withOpacity(0.3)),
+        boxShadow: [
+          BoxShadow(
+            color: cs.shadow.withOpacity(0.04),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          )
+        ],
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(24),
+        onTap: () => context.push('/customers/detail', extra: customer),
+        onLongPress: () {
+          showPopup(
+              context: context,
+              onCancelPressed: () {},
+              onOkPressed: () async {
+                final b = await context
+                    .read<CustomerViewmodel>()
+                    .deleteCustomer(customer.id);
+                if (!b) {
+                  AppSnackbar.showSuccess(context, "Xóa thất bại");
+                }
+                AppSnackbar.showSuccess(context, "Xóa thành công");
+              },
+              type: AlertType.warning,
+              title: "Cảnh báo",
+              content: "Bạn có muốn xóa khách hàng này không?");
+        },
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // 1. Avatar với chữ cái đầu và Badge trạng thái
+                  Stack(
+                    children: [
+                      Container(
+                        width: 56,
+                        height: 56,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [cs.primary, cs.primary.withOpacity(0.7)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(18),
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          customer.name.substring(0, 1).toUpperCase(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        right: -2,
+                        bottom: -2,
+                        child: Container(
+                          padding: const EdgeInsets.all(3),
+                          decoration: BoxDecoration(
+                            color: cs.surface,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.circle,
+                            color: statusColor,
+                            size: 14,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(width: 16),
+
+                  // 2. Thông tin chính (Tên & Badge)
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                customer.name,
+                                style: theme.textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: cs.onSurface,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            // Status Label nhỏ gọn
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: statusColor.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                customer.status.toUpperCase(),
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: statusColor,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 9,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Row(
+                          children: [
+                            Icon(Icons.phone_iphone_rounded,
+                                size: 16, color: cs.primary),
+                            const SizedBox(width: 6),
+                            Text(
+                              customer.phone ?? "Chưa có SĐT",
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: cs.onSurfaceVariant,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+
+              // Dấu gạch ngang nhẹ giữa card
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                child: Divider(
+                    height: 1, color: cs.outlineVariant.withOpacity(0.5)),
+              ),
+
+              // 3. Địa chỉ và các nút thao tác nhanh
+              Row(
+                children: [
+                  Icon(Icons.location_on_rounded, size: 16, color: cs.outline),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      customer.address ?? "Chưa cập nhật địa chỉ",
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: cs.outline,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  // Nút gọi điện nhanh
+                  if (customer.phone != null)
+                    _buildQuickAction(
+                      icon: Icons.call_rounded,
+                      color: Colors.green,
+                      onTap: () {
+                        /* Thêm logic url_launcher gọi điện */
+                      },
+                    ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+// Helper xây dựng nút action nhỏ bên phải
+  Widget _buildQuickAction(
+      {required IconData icon,
+      required Color color,
+      required VoidCallback onTap}) {
+    return Material(
+      color: color.withOpacity(0.1),
+      borderRadius: BorderRadius.circular(10),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
+        child: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Icon(icon, size: 18, color: color),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 60),
+        child: Column(
+          children: [
+            Icon(Icons.person_search_outlined,
+                size: 64, color: Colors.grey[300]),
+            const SizedBox(height: 16),
+            const Text(
+              "Không tìm thấy khách hàng nào",
+              style: TextStyle(color: Colors.grey),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

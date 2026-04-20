@@ -1,0 +1,77 @@
+{
+  "loginTitle": "Đăng nhập vào tài khoản",
+  "loginBtn": "Đăng nhập",
+  "dashboard_text": "Trang tổng quan",
+  "password_text": "Mật khẩu",
+
+  "common_save": "Lưu",
+  "common_add": "Thêm",
+  "common_edit": "Sửa",
+  "common_delete": "Xóa",
+  "common_update": "Cập nhật",
+  "common_cancel": "Hủy",
+  "common_search": "Tìm kiếm",
+  "common_confirm": "Xác nhận",
+  "common_detail": "Chi tiết",
+
+  "quick_actions": "Chức năng nhanh",
+  "recent_actions": "Hoạt động gần đây",
+  "view_all": "Xem tất cả",
+
+  "customer": "Khách hàng",
+  "customer_list": "Danh sách khách hàng",
+  "customer_add": "Thêm khách hàng",
+  "customer_edit": "Sửa khách hàng",
+  "customer_delete": "Xóa khách hàng",
+  "customer_save": "Lưu khách hàng",
+  "customer_detail": "Chi tiết khách hàng",
+
+  "category": "Danh mục",
+  "category_list": "Danh sách danh mục",
+  "category_add": "Thêm danh mục",
+  "category_edit": "Sửa danh mục",
+  "category_delete": "Xóa danh mục",
+  "category_save": "Lưu danh mục",
+  "category_detail": "Chi tiết danh mục",
+
+  "product": "Sản phẩm",
+  "product_list": "Danh sách sản phẩm",
+  "product_add": "Thêm sản phẩm",
+  "product_edit": "Sửa sản phẩm",
+  "product_delete": "Xóa sản phẩm",
+  "product_save": "Lưu sản phẩm",
+  "product_detail": "Chi tiết sản phẩm",
+
+  "invoice": "Hóa đơn",
+  "invoice_list": "Danh sách hóa đơn",
+  "invoice_add": "Thêm hóa đơn",
+  "invoice_edit": "Sửa hóa đơn",
+  "invoice_delete": "Xóa hóa đơn",
+  "invoice_save": "Lưu hóa đơn",
+  "invoice_detail": "Chi tiết hóa đơn",
+
+  "supplier": "Nhà cung cấp",
+  "supplier_list": "Danh sách nhà cung cấp",
+  "supplier_add": "Thêm nhà cung cấp",
+  "supplier_edit": "Sửa nhà cung cấp",
+  "supplier_delete": "Xóa nhà cung cấp",
+  "supplier_save": "Lưu nhà cung cấp",
+  "supplier_detail": "Chi tiết nhà cung cấp",
+
+  "sales": "Bán hàng",
+  "purchase": "Nhập hàng",
+  "inventory": "Quản lý kho",
+  "debt": "Công nợ",
+
+  "sales_create": "Tạo đơn bán",
+  "purchase_create": "Tạo đơn nhập",
+  "inventory_manage": "Quản lý kho",
+  "debt_manage": "Quản lý công nợ",
+
+  "settings": "Cài đặt",
+
+  "message_success": "Thành công",
+  "message_error": "Lỗi",
+  "confirm_delete": "Bạn có chắc muốn xóa không?",
+  "no_data": "Không có dữ liệu"
+}
