@@ -4,6 +4,22 @@
   "dashboard_text": "Trang tổng quan",
   "password_text": "Mật khẩu",
 
+  "en" : "Tiếng anh",
+  "vi" : "Tiếng việt",
+
+  "language_text": "Ngôn ngữ",
+  "theme_text": "Giao diện",
+  "logout_text": "Đăng xuất",
+
+  "login_success": "Đăng nhập thành công",
+  "login_failed": "Đăng nhập thất bại",
+  "logout_success": "Đăng xuất thành công",
+
+
+  "yes": "Có",
+  "no": "Không",
+  "confirm": "Xác nhận",
+
   "common_save": "Lưu",
   "common_add": "Thêm",
   "common_edit": "Sửa",
@@ -13,6 +29,54 @@
   "common_search": "Tìm kiếm",
   "common_confirm": "Xác nhận",
   "common_detail": "Chi tiết",
+  "common_warning": "Cảnh báo",
+
+  "action_success": "{action} {item} thành công",
+  "action_failed": "{action} {item} thất bại",
+
+  "@@locale": "vi",
+  "confirmDeleteItem": "Bạn có chắc muốn xóa {item} này không?",
+  "@confirmDeleteItem": {
+    "description": "Xác nhận xóa với tên đối tượng",
+    "placeholders": {
+      "item": {
+        "type": "String",
+        "example": "sản phẩm"
+      }
+    }
+  },
+  "actionSuccess": "{action} {item} thành công",
+  "@actionSuccess": {
+    "description": "Thông báo thành công",
+    "placeholders": {
+      "action": {
+        "type": "String",
+        "example": "Thêm"
+      },
+      "item": {
+        "type": "String",
+        "example": "sản phẩm"
+      }
+    }
+  },
+
+  "actionFailed": "{action} {item} thất bại",
+  "@actionFailed": {
+    "description": "Thông báo thất bại",
+    "placeholders": {
+      "action": {
+        "type": "String"
+      },
+      "item": {
+        "type": "String"
+      }
+    }
+  },
+
+
+  "confirm_delete": "Bạn có chắc muốn xóa không?",
+
+  "confirm_logout": "Bạn có chắc muốn đăng xuất không?",
 
   "quick_actions": "Chức năng nhanh",
   "recent_actions": "Hoạt động gần đây",
@@ -72,6 +136,6 @@
 
   "message_success": "Thành công",
   "message_error": "Lỗi",
-  "confirm_delete": "Bạn có chắc muốn xóa không?",
+
   "no_data": "Không có dữ liệu"
 }

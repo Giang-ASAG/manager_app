@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:manager/core/extensions/l10n_extension.dart';
 import 'package:manager/core/router/app_routes.dart';
+import 'package:manager/core/utils/app_responsive.dart';
 import 'package:manager/l10n/app_localizations.dart';
 import 'package:manager/viewmodels/auth_viewmodel.dart';
 import 'package:manager/views/widgets/app_actions.dart';
@@ -66,20 +67,20 @@ class _LoginScreenState extends State<LoginScreen> {
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
+            padding: EdgeInsets.symmetric(horizontal: context.rw(24)),
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 380),
+              constraints: BoxConstraints(maxWidth: context.rw(380)),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   AppActions(),
-                  const SizedBox(height: 30),
+                  SizedBox(height: context.rh(30)),
                   _buildLogo(),
-                  const SizedBox(height: 30),
+                  SizedBox(height: context.rh(30)),
                   _buildTitle(theme),
-                  const SizedBox(height: 30),
+                  SizedBox(height: context.rh(30)),
                   _buildForm(theme, auth),
-                  const SizedBox(height: 20),
+                  SizedBox(height: context.rh(20)),
                   _buildHint(theme),
                 ],
               ),
@@ -91,8 +92,8 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Widget _buildLogo() {
-    return const Center(
-      child: Icon(Icons.bolt, size: 48, color: Colors.indigo),
+    return Center(
+      child: Icon(Icons.bolt, size: context.sp(48), color: Colors.indigo),
     );
   }
 
@@ -102,6 +103,7 @@ class _LoginScreenState extends State<LoginScreen> {
       textAlign: TextAlign.center,
       style: theme.textTheme.headlineSmall?.copyWith(
         fontWeight: FontWeight.bold,
+        fontSize: context.sp(24),
       ),
     );
   }
@@ -112,9 +114,9 @@ class _LoginScreenState extends State<LoginScreen> {
       child: Column(
         children: [
           _buildEmail(),
-          const SizedBox(height: 16),
+          SizedBox(height: context.rh(16)),
           _buildPassword(),
-          const SizedBox(height: 20),
+          SizedBox(height: context.rh(20)),
           AppButton(
             text: AppLocalizations.of(context)!.loginBtn,
             isLoading: auth.isLoading,

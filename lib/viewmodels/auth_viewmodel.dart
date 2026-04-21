@@ -6,39 +6,90 @@ class AuthViewModel extends ChangeNotifier {
 
   AuthViewModel(this.repo);
 
-  bool isLoading = false;
-  String? errorMessage;
-  String? token;
+  // Private fields
+  bool _isLoggedIn = false;
+  bool _isLoading = false;
+  String? _errorMessage;
+  String? _token;
 
+  // Public getters
+  bool get isLoggedIn => _isLoggedIn;
+
+  bool get isLoading => _isLoading;
+
+  String? get errorMessage => _errorMessage;
+
+  String? get token => _token;
+
+  // ====================== LOAD TOKEN KHI MỞ APP ======================
+  Future<void> loadToken() async {
+    try {
+      final savedToken = await repo.getToken();
+      if (savedToken != null && savedToken.isNotEmpty) {
+        _token = savedToken;
+        _isLoggedIn = true;
+      } else {
+        _isLoggedIn = false;
+        _token = null;
+      }
+    } catch (e) {
+      _isLoggedIn = false;
+      _token = null;
+    }
+    notifyListeners();
+  }
+
+  // ====================== LOGIN ======================
   Future<bool> login(String email, String password) async {
     try {
-      isLoading = true;
-      errorMessage = null;
+      _isLoading = true;
+      _errorMessage = null;
       notifyListeners();
 
       final res = await repo.login(email, password);
 
-      final accessToken = res['token'];
+      final accessToken = res['token']?.toString();
 
-      // ❗ Check kỹ
-      if (accessToken == null || accessToken.toString().isEmpty) {
-        throw Exception("Token không hợp lệ");
+      if (accessToken == null || accessToken.isEmpty) {
+        throw Exception("Token không hợp lệ từ server");
       }
 
-      token = accessToken;
+      _token = accessToken;
+      _isLoggedIn = true;
 
-      // 🔥 Lưu token
       await repo.saveToken(accessToken);
-      debugPrint("Token===:  "+ accessToken.toString());
-      isLoading = false;
+
+      _isLoading = false;
       notifyListeners();
 
       return true;
     } catch (e) {
-      isLoading = false;
-      errorMessage = e.toString();
+      _isLoading = false;
+      _errorMessage = e.toString();
+      _isLoggedIn = false;
+      _token = null;
       notifyListeners();
       return false;
     }
+  }
+
+  // ====================== LOGOUT ======================
+  Future<void> logout() async {
+    try {
+      await repo.clearToken(); // Sử dụng hàm đã thêm ở repository
+    } catch (e) {
+      debugPrint("Logout error: $e");
+    }
+
+    _token = null;
+    _isLoggedIn = false;
+    _errorMessage = null;
+    notifyListeners();
+  }
+
+  // Clear error khi user bắt đầu nhập lại
+  void clearError() {
+    _errorMessage = null;
+    notifyListeners();
   }
 }

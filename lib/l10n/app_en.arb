@@ -3,7 +3,17 @@
   "loginBtn": "Login",
   "dashboard_text": "Dashboard",
   "password_text": "Password",
-
+  "en": "English",
+  "vi": "Vietnamese",
+  "language_text": "Language",
+  "theme_text": "Theme",
+  "logout_text": "Logout",
+  "login_success": "Login successful",
+  "login_failed": "Login failed",
+  "logout_success": "Logout successful",
+  "yes": "Yes",
+  "no": "No",
+  "confirm": "Confirm",
   "common_save": "Save",
   "common_add": "Add",
   "common_edit": "Edit",
@@ -13,11 +23,56 @@
   "common_search": "Search",
   "common_confirm": "Confirm",
   "common_detail": "Detail",
+  "common_warning": "Warning",
+  "action_success": "{action} {item} successfully",
+  "action_failed": "{action} {item} failed",
 
+  "@@locale": "en",
+  "confirmDeleteItem": "Are you sure you want to delete {item}?",
+  "@confirmDeleteItem": {
+    "description": "Confirm delete with item name",
+    "placeholders": {
+      "item": {
+        "type": "String",
+        "example": "product"
+      }
+    }
+  },
+
+  "actionSuccess": "{action} {item} successfully",
+  "@actionSuccess": {
+    "description": "Generic success message",
+    "placeholders": {
+      "action": {
+        "type": "String",
+        "example": "Add"
+      },
+      "item": {
+        "type": "String",
+        "example": "product"
+      }
+    }
+  },
+
+  "actionFailed": "{action} {item} failed",
+  "@actionFailed": {
+    "description": "Generic failed message",
+    "placeholders": {
+      "action": {
+        "type": "String"
+      },
+      "item": {
+        "type": "String"
+      }
+    }
+  },
+
+
+  "confirm_delete": "Are you sure you want to delete?",
+  "confirm_logout": "Are you sure you want to log out?",
   "quick_actions": "Quick Actions",
   "recent_actions": "Recent Activities",
   "view_all": "View All",
-
   "customer": "Customer",
   "customer_list": "Customer List",
   "customer_add": "Add Customer",
@@ -25,7 +80,6 @@
   "customer_delete": "Delete Customer",
   "customer_save": "Save Customer",
   "customer_detail": "Customer Detail",
-
   "category": "Category",
   "category_list": "Category List",
   "category_add": "Add Category",
@@ -33,7 +87,6 @@
   "category_delete": "Delete Category",
   "category_save": "Save Category",
   "category_detail": "Category Detail",
-
   "product": "Product",
   "product_list": "Product List",
   "product_add": "Add Product",
@@ -41,7 +94,6 @@
   "product_delete": "Delete Product",
   "product_save": "Save Product",
   "product_detail": "Product Detail",
-
   "invoice": "Invoice",
   "invoice_list": "Invoice List",
   "invoice_add": "Add Invoice",
@@ -49,7 +101,6 @@
   "invoice_delete": "Delete Invoice",
   "invoice_save": "Save Invoice",
   "invoice_detail": "Invoice Detail",
-
   "supplier": "Supplier",
   "supplier_list": "Supplier List",
   "supplier_add": "Add Supplier",
@@ -57,21 +108,16 @@
   "supplier_delete": "Delete Supplier",
   "supplier_save": "Save Supplier",
   "supplier_detail": "Supplier Detail",
-
   "sales": "Sales",
   "purchase": "Purchase",
   "inventory": "Inventory",
   "debt": "Debt / Receivables",
-
   "sales_create": "Create Sale",
   "purchase_create": "Create Purchase",
   "inventory_manage": "Manage Inventory",
   "debt_manage": "Manage Debt",
-
   "settings": "Settings",
-
   "message_success": "Success",
   "message_error": "Error",
-  "confirm_delete": "Are you sure you want to delete?",
   "no_data": "No data available"
 }

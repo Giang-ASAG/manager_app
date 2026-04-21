@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:manager/core/utils/app_responsive.dart';
 
 class AppSliverAppBar extends StatelessWidget {
   final String title;
@@ -13,7 +14,7 @@ class AppSliverAppBar extends StatelessWidget {
     this.showBackButton = false,
     this.actions,
     this.bottom,
-    this.height = 140,
+    this.height = 150,
   });
 
   @override
@@ -24,7 +25,7 @@ class AppSliverAppBar extends StatelessWidget {
     return SliverAppBar(
       automaticallyImplyLeading: false,
       pinned: true,
-      expandedHeight: height,
+      expandedHeight: context.rh(height),
       backgroundColor: Colors.transparent,
       elevation: 0,
       flexibleSpace: FlexibleSpaceBar(
@@ -38,15 +39,20 @@ class AppSliverAppBar extends StatelessWidget {
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
-            borderRadius: const BorderRadius.only(
-              bottomLeft: Radius.circular(28),
-              bottomRight: Radius.circular(28),
+            borderRadius: BorderRadius.only(
+              bottomLeft: Radius.circular(context.rr(28)),
+              bottomRight: Radius.circular(context.rr(28)),
             ),
           ),
           child: SafeArea(
             bottom: false,
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 20, 16),
+              padding: EdgeInsets.fromLTRB(
+                context.rw(16),
+                context.rh(12),
+                context.rw(20),
+                context.rh(10), // ← từ rh(16)
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -57,36 +63,36 @@ class AppSliverAppBar extends StatelessWidget {
                           onPressed: () => Navigator.of(context).pop(),
                           icon: Icon(
                             Icons.arrow_back_rounded,
-                            color: colorScheme.onPrimary, // ✅ FIX
-                            size: 28,
+                            color: colorScheme.onPrimary,
+                            size: context.sp(28),
                           ),
                         ),
-                        const SizedBox(width: 8),
+                        SizedBox(width: context.rw(8)),
                       ],
-
                       Expanded(
-                        child: Text(
-                          title,
-                          style: TextStyle(
-                            color: colorScheme.onPrimary, // ✅ FIX
-                            fontSize: 22,
-                            fontWeight: FontWeight.w800,
+                        child: Padding(
+                          padding: const EdgeInsets.only(left: 10),
+                          child: Text(
+                            title,
+                            style: TextStyle(
+                              color: colorScheme.onPrimary,
+                              fontSize: context.sp(22),
+                              fontWeight: FontWeight.w800,
+                            ),
                           ),
                         ),
                       ),
-
                       if (actions != null)
                         IconTheme(
                           data: IconThemeData(
-                            color: colorScheme.onPrimary, // ✅ FIX toàn bộ icon
+                            color: colorScheme.onPrimary,
                           ),
                           child: Row(children: actions!),
                         ),
                     ],
                   ),
-
                   if (bottom != null) ...[
-                    const SizedBox(height: 12),
+                    SizedBox(height: context.rh(12)),
                     Theme(
                       data: theme.copyWith(
                         inputDecorationTheme: InputDecorationTheme(
@@ -94,31 +100,31 @@ class AppSliverAppBar extends StatelessWidget {
                           fillColor: Colors.white.withOpacity(0.18),
                           hintStyle: TextStyle(
                             color: Colors.white.withOpacity(0.7),
-                            fontSize: 14,
+                            fontSize: context.sp(14),
                             fontWeight: FontWeight.w400,
                           ),
                           prefixIconColor: Colors.white.withOpacity(0.85),
                           suffixIconColor: Colors.white.withOpacity(0.7),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 12,
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: context.rw(16),
+                            vertical: context.rh(12),
                           ),
                           border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(20),
+                            borderRadius: BorderRadius.circular(context.rr(20)),
                             borderSide: BorderSide(
                               color: Colors.white.withOpacity(0.3),
                               width: 1,
                             ),
                           ),
                           enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(20),
+                            borderRadius: BorderRadius.circular(context.rr(20)),
                             borderSide: BorderSide(
                               color: Colors.white.withOpacity(0.3),
                               width: 1,
                             ),
                           ),
                           focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(20),
+                            borderRadius: BorderRadius.circular(context.rr(20)),
                             borderSide: BorderSide(
                               color: Colors.white.withOpacity(0.7),
                               width: 1.5,

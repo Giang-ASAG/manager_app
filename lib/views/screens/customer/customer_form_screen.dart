@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:manager/core/utils/app_responsive.dart';
 import 'package:manager/data/models/customer.dart';
 import 'package:manager/viewmodels/customer_viewmodel.dart';
 import 'package:provider/provider.dart';
@@ -80,7 +81,7 @@ class _CustomersFormScreenState extends State<CustomerFormScreen> {
             height: 80,
           ),
           SliverPadding(
-            padding: const EdgeInsets.fromLTRB(16, 24, 16, 120),
+            padding: EdgeInsets.fromLTRB(context.rw(16), context.rh(24), context.rw(16), context.rh(120)),
             sliver: SliverToBoxAdapter(
               child: Form(
                 key: _formKey,
@@ -96,7 +97,7 @@ class _CustomersFormScreenState extends State<CustomerFormScreen> {
                       icon: Icons.person_outline_rounded,
                       validator: (v) => v!.isEmpty ? 'Vui lòng nhập tên' : null,
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: context.rh(16)),
                     _buildTextField(
                       context,
                       controller: _emailController,
@@ -111,7 +112,7 @@ class _CustomersFormScreenState extends State<CustomerFormScreen> {
                         return null;
                       },
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: context.rh(16)),
                     _buildTextField(
                       context,
                       controller: _phoneController,
@@ -120,7 +121,7 @@ class _CustomersFormScreenState extends State<CustomerFormScreen> {
                       icon: Icons.phone_android_rounded,
                       keyboardType: TextInputType.phone,
                     ),
-                    const SizedBox(height: 24),
+                    SizedBox(height: context.rh(24)),
                     _buildSectionTitle(context, "Địa chỉ"),
                     _buildTextField(
                       context,
@@ -129,7 +130,7 @@ class _CustomersFormScreenState extends State<CustomerFormScreen> {
                       hint: 'Số nhà, tên đường...',
                       icon: Icons.location_on_outlined,
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: context.rh(16)),
                     _buildTextField(
                       context,
                       controller: _cityController,
@@ -137,10 +138,10 @@ class _CustomersFormScreenState extends State<CustomerFormScreen> {
                       hint: 'Ví dụ: Hồ Chí Minh',
                       icon: Icons.map_outlined,
                     ),
-                    const SizedBox(height: 24),
+                    SizedBox(height: context.rh(24)),
                     _buildSectionTitle(context, "Trạng thái"),
                     Container(
-                      padding: const EdgeInsets.all(12),
+                      padding: EdgeInsets.all(context.rw(12)),
                       decoration: _fieldDecoration(context),
                       child: Row(
                         children: [
@@ -149,7 +150,7 @@ class _CustomersFormScreenState extends State<CustomerFormScreen> {
                                   ? Icons.check_circle_outline
                                   : Icons.block_flipped,
                               color: _isActive ? Colors.green : cs.error),
-                          const SizedBox(width: 12),
+                          SizedBox(width: context.rw(12)),
                           Expanded(
                             child: Text(
                               _isActive
@@ -157,6 +158,7 @@ class _CustomersFormScreenState extends State<CustomerFormScreen> {
                                   : "Ngừng hoạt động (Inactive)",
                               style: TextStyle(
                                   fontWeight: FontWeight.w600,
+                                  fontSize: context.sp(14),
                                   color: _isActive ? Colors.green : cs.error),
                             ),
                           ),
@@ -168,7 +170,7 @@ class _CustomersFormScreenState extends State<CustomerFormScreen> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 20),
+                    SizedBox(height: context.rh(20)),
                     Text(
                       "Ngày khởi tạo: ${DateFormat('dd/MM/yyyy').format(DateTime.now())}",
                       style: Theme.of(context)
@@ -185,7 +187,7 @@ class _CustomersFormScreenState extends State<CustomerFormScreen> {
       ),
       bottomSheet: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 30),
+          padding: EdgeInsets.fromLTRB(context.rw(16), context.rh(12), context.rw(16), context.rh(30)),
           child: AppButton(
             text: "Lưu khách hàng",
             isLoading: customerVM.isLoading,
@@ -200,11 +202,12 @@ class _CustomersFormScreenState extends State<CustomerFormScreen> {
 
   Widget _buildSectionTitle(BuildContext context, String title) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12, left: 4),
+      padding: EdgeInsets.only(bottom: context.rh(12), left: context.rw(4)),
       child: Text(
         title.toUpperCase(),
         style: Theme.of(context).textTheme.labelMedium?.copyWith(
               fontWeight: FontWeight.bold,
+              fontSize: context.sp(12),
               color: Theme.of(context).colorScheme.primary,
             ),
       ),
@@ -224,8 +227,8 @@ class _CustomersFormScreenState extends State<CustomerFormScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
-        const SizedBox(height: 8),
+        Text(label, style: TextStyle(fontWeight: FontWeight.bold, fontSize: context.sp(14))),
+        SizedBox(height: context.rh(8)),
         Container(
           decoration: _fieldDecoration(context),
           child: TextFormField(
@@ -234,10 +237,10 @@ class _CustomersFormScreenState extends State<CustomerFormScreen> {
             keyboardType: keyboardType,
             decoration: InputDecoration(
               hintText: hint,
-              prefixIcon: Icon(icon, color: cs.primary, size: 20),
+              prefixIcon: Icon(icon, color: cs.primary, size: context.sp(20)),
               border: InputBorder.none,
               contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  EdgeInsets.symmetric(horizontal: context.rw(16), vertical: context.rh(14)),
             ),
           ),
         ),

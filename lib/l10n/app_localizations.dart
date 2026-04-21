@@ -122,6 +122,72 @@ abstract class AppLocalizations {
   /// **'Password'**
   String get password_text;
 
+  /// No description provided for @en.
+  ///
+  /// In en, this message translates to:
+  /// **'English'**
+  String get en;
+
+  /// No description provided for @vi.
+  ///
+  /// In en, this message translates to:
+  /// **'Vietnamese'**
+  String get vi;
+
+  /// No description provided for @language_text.
+  ///
+  /// In en, this message translates to:
+  /// **'Language'**
+  String get language_text;
+
+  /// No description provided for @theme_text.
+  ///
+  /// In en, this message translates to:
+  /// **'Theme'**
+  String get theme_text;
+
+  /// No description provided for @logout_text.
+  ///
+  /// In en, this message translates to:
+  /// **'Logout'**
+  String get logout_text;
+
+  /// No description provided for @login_success.
+  ///
+  /// In en, this message translates to:
+  /// **'Login successful'**
+  String get login_success;
+
+  /// No description provided for @login_failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Login failed'**
+  String get login_failed;
+
+  /// No description provided for @logout_success.
+  ///
+  /// In en, this message translates to:
+  /// **'Logout successful'**
+  String get logout_success;
+
+  /// No description provided for @yes.
+  ///
+  /// In en, this message translates to:
+  /// **'Yes'**
+  String get yes;
+
+  /// No description provided for @no.
+  ///
+  /// In en, this message translates to:
+  /// **'No'**
+  String get no;
+
+  /// No description provided for @confirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm'**
+  String get confirm;
+
   /// No description provided for @common_save.
   ///
   /// In en, this message translates to:
@@ -175,6 +241,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Detail'**
   String get common_detail;
+
+  /// No description provided for @common_warning.
+  ///
+  /// In en, this message translates to:
+  /// **'Warning'**
+  String get common_warning;
+
+  /// No description provided for @action_success.
+  ///
+  /// In en, this message translates to:
+  /// **'{action} {item} successfully'**
+  String action_success(Object action, Object item);
+
+  /// No description provided for @action_failed.
+  ///
+  /// In en, this message translates to:
+  /// **'{action} {item} failed'**
+  String action_failed(Object action, Object item);
+
+  /// Confirm delete with item name
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to delete {item}?'**
+  String confirmDeleteItem(String item);
+
+  /// Generic success message
+  ///
+  /// In en, this message translates to:
+  /// **'{action} {item} successfully'**
+  String actionSuccess(String action, String item);
+
+  /// Generic failed message
+  ///
+  /// In en, this message translates to:
+  /// **'{action} {item} failed'**
+  String actionFailed(String action, String item);
+
+  /// No description provided for @confirm_delete.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to delete?'**
+  String get confirm_delete;
+
+  /// No description provided for @confirm_logout.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to log out?'**
+  String get confirm_logout;
 
   /// No description provided for @quick_actions.
   ///
@@ -469,12 +583,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Error'**
   String get message_error;
-
-  /// No description provided for @confirm_delete.
-  ///
-  /// In en, this message translates to:
-  /// **'Are you sure you want to delete?'**
-  String get confirm_delete;
 
   /// No description provided for @no_data.
   ///

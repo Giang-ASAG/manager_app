@@ -1,22 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:manager/core/extensions/l10n_extension.dart';
 import 'package:rflutter_alert/rflutter_alert.dart';
 
-Future<void> showPopup({
-  required BuildContext context,
-  String? title,
-  String? content,
-  AlertType? type,
-  required VoidCallback onOkPressed,
-  VoidCallback? onCancelPressed, IconData? icon, double? opacity
-}) async {
+Future<void> showPopup(
+    {required BuildContext context,
+    String? title,
+    String? content,
+    AlertType? type,
+    required VoidCallback onOkPressed,
+    VoidCallback? onCancelPressed,
+    IconData? icon,
+    double? opacity}) async {
   Alert(
     context: context,
     type: type ?? AlertType.info,
     onWillPopActive: true,
-      closeIcon: Opacity(
-        opacity: opacity ?? 0.5,
-        child: Icon(icon),
+    closeIcon: Opacity(
+      opacity: opacity ?? 0.5,
+      child: Icon(
+        icon,
+        color: Colors.red,
       ),
+    ),
     // ✅ Nếu muốn chặn nút back thì set false
     content: Column(
       children: [
@@ -44,7 +49,8 @@ Future<void> showPopup({
     buttons: [
       if (onCancelPressed != null)
         DialogButton(
-          child: const Text("Huỷ", style: TextStyle(color: Colors.white)),
+          child: Text(context.l10n.common_cancel,
+              style: TextStyle(color: Colors.white)),
           onPressed: () {
             Navigator.pop(context);
             onCancelPressed();
@@ -52,7 +58,8 @@ Future<void> showPopup({
           color: Colors.grey,
         ),
       DialogButton(
-        child: const Text("OK", style: TextStyle(color: Colors.white)),
+        child: Text(context.l10n.common_confirm,
+            style: TextStyle(color: Colors.white)),
         onPressed: () {
           Navigator.pop(context);
           onOkPressed();

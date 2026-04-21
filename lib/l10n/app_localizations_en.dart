@@ -21,6 +21,39 @@ class AppLocalizationsEn extends AppLocalizations {
   String get password_text => 'Password';
 
   @override
+  String get en => 'English';
+
+  @override
+  String get vi => 'Vietnamese';
+
+  @override
+  String get language_text => 'Language';
+
+  @override
+  String get theme_text => 'Theme';
+
+  @override
+  String get logout_text => 'Logout';
+
+  @override
+  String get login_success => 'Login successful';
+
+  @override
+  String get login_failed => 'Login failed';
+
+  @override
+  String get logout_success => 'Logout successful';
+
+  @override
+  String get yes => 'Yes';
+
+  @override
+  String get no => 'No';
+
+  @override
+  String get confirm => 'Confirm';
+
+  @override
   String get common_save => 'Save';
 
   @override
@@ -46,6 +79,40 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get common_detail => 'Detail';
+
+  @override
+  String get common_warning => 'Warning';
+
+  @override
+  String action_success(Object action, Object item) {
+    return '$action $item successfully';
+  }
+
+  @override
+  String action_failed(Object action, Object item) {
+    return '$action $item failed';
+  }
+
+  @override
+  String confirmDeleteItem(String item) {
+    return 'Are you sure you want to delete $item?';
+  }
+
+  @override
+  String actionSuccess(String action, String item) {
+    return '$action $item successfully';
+  }
+
+  @override
+  String actionFailed(String action, String item) {
+    return '$action $item failed';
+  }
+
+  @override
+  String get confirm_delete => 'Are you sure you want to delete?';
+
+  @override
+  String get confirm_logout => 'Are you sure you want to log out?';
 
   @override
   String get quick_actions => 'Quick Actions';
@@ -193,9 +260,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get message_error => 'Error';
-
-  @override
-  String get confirm_delete => 'Are you sure you want to delete?';
 
   @override
   String get no_data => 'No data available';

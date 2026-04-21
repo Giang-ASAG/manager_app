@@ -5,6 +5,8 @@ import 'package:manager/views/screens/dashboard/dashboard_screen.dart';
 import 'package:manager/views/screens/invoice/invoice_list_screen.dart';
 import 'package:manager/views/widgets/app_bottom_nav.dart';
 
+import '../settings/settings_screen.dart';
+
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
 
@@ -20,7 +22,7 @@ class _MainScreenState extends State<MainScreen> {
     const InvoiceListScreen(),
     const Center(child: Text("Inventory")),
     // const Center(child: Text("Orders")),
-    const Center(child: Text("Settings")),
+    const SettingsScreen(),
   ];
 
   @override

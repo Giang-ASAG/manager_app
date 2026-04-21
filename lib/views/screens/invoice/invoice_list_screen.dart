@@ -1,14 +1,18 @@
-import 'package:flutter/cupertino.dart'; // ← Thêm import này
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:manager/core/extensions/l10n_extension.dart';
 import 'package:manager/core/router/app_routes.dart';
 import 'package:manager/data/models/invoice.dart';
 import 'package:manager/viewmodels/invoice_viewmodel.dart';
 import 'package:manager/views/widgets/app_search_field.dart';
 import 'package:manager/views/widgets/app_sliver_app_bar.dart';
-import 'package:manager/views/widgets/shared/app_summary_card.dart';
+import 'package:manager/views/widgets/app_snackbar.dart';
+import 'package:manager/views/widgets/custom_popup.dart';
+import 'package:manager/views/widgets/ios_action_sheet.dart'; // ← Import action sheet
 import 'package:manager/views/widgets/shared/app_add_button.dart';
+import 'package:manager/views/widgets/shared/app_summary_card.dart';
 import 'package:provider/provider.dart';
 
 class InvoiceListScreen extends StatefulWidget {
@@ -42,102 +46,100 @@ class _InvoiceListScreenState extends State<InvoiceListScreen> {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
 
-    return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      body: Consumer<InvoiceViewmodel>(
-        builder: (_, vm, __) {
-          if (vm.isLoading && vm.invoices.isEmpty) {
-            return const Center(child: CircularProgressIndicator());
-          }
+    return GestureDetector(
+      onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+      child: Scaffold(
+        backgroundColor: theme.scaffoldBackgroundColor,
+        body: Consumer<InvoiceViewmodel>(
+          builder: (_, vm, __) {
+            if (vm.isLoading && vm.invoices.isEmpty) {
+              return const Center(child: CircularProgressIndicator());
+            }
 
-          final query = searchController.text.trim().toLowerCase();
-          final filtered = query.isEmpty
-              ? vm.invoices
-              : vm.invoices.where((i) {
-                  return i.invoiceNumber.toLowerCase().contains(query) ||
-                      i.customerName.toLowerCase().contains(query);
-                }).toList();
+            final query = searchController.text.trim().toLowerCase();
+            final filtered = query.isEmpty
+                ? vm.invoices
+                : vm.invoices.where((i) {
+                    return i.invoiceNumber.toLowerCase().contains(query) ||
+                        (i.customerName?.toLowerCase().contains(query) ??
+                            false);
+                  }).toList();
 
-          // Tính tổng doanh thu từ danh sách đang hiển thị
-          final totalRevenue =
-              filtered.fold(0.0, (sum, item) => sum + item.total);
+            final totalRevenue =
+                filtered.fold(0.0, (sum, item) => sum + (item.total ?? 0));
 
-          return CustomScrollView(
-            physics: const BouncingScrollPhysics(),
-            // Bắt buộc cho Cupertino refresh
-            slivers: [
-              // ==================== APP BAR ====================
-              AppSliverAppBar(
-                title: 'Hóa đơn',
-                showBackButton: false,
-                height: 150,
-                actions: [
-                  AppAddButton(
-                    onPressed: () => context.push(AppRoutes.invoiceAdd),
-                  ),
-                ],
-                bottom: AppSearchField(controller: searchController),
-              ),
-
-              // ==================== CUPERTINO REFRESH CONTROL ====================
-              CupertinoSliverRefreshControl(
-                onRefresh: _onRefresh,
-              ),
-
-              // ==================== CONTENT ====================
-              SliverPadding(
-                padding: const EdgeInsets.fromLTRB(16, 24, 16, 80),
-                sliver: SliverList(
-                  delegate: SliverChildListDelegate([
-                    Row(
-                      children: [
-                        Expanded(
-                          child: AppSummaryCard(
-                            label: "Số lượng",
-                            value: "${filtered.length}",
-                            icon: Icons.description_outlined,
-                            color: cs.primary,
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: AppSummaryCard(
-                            label: "Tổng tiền",
-                            value: currencyFormat.format(totalRevenue),
-                            icon: Icons.monetization_on_outlined,
-                            color: Colors.green,
-                          ),
-                        ),
-                      ],
+            return CustomScrollView(
+              physics: const BouncingScrollPhysics(),
+              slivers: [
+                AppSliverAppBar(
+                  title: context.l10n.invoice ?? 'Hóa đơn',
+                  showBackButton: false,
+                  height: 150,
+                  actions: [
+                    AppAddButton(
+                      onPressed: () => context.push(AppRoutes.invoiceAdd),
                     ),
-                    const SizedBox(height: 24),
-                    _buildSectionTitle(theme, filtered.length),
-                    const SizedBox(height: 12),
-                    if (filtered.isEmpty)
-                      _buildEmptyState()
-                    else
-                      ...filtered.map((i) => _buildInvoiceCard(i, cs, theme)),
-                  ]),
+                  ],
+                  bottom: AppSearchField(controller: searchController),
                 ),
-              ),
-            ],
-          );
-        },
+                CupertinoSliverRefreshControl(onRefresh: _onRefresh),
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(16, 24, 16, 80),
+                  sliver: SliverList(
+                    delegate: SliverChildListDelegate([
+                      // Summary Cards
+                      Row(
+                        children: [
+                          Expanded(
+                            child: AppSummaryCard(
+                              label: "Số lượng",
+                              value: "${filtered.length}",
+                              icon: Icons.description_outlined,
+                              color: cs.primary,
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: AppSummaryCard(
+                              label: "Tổng tiền",
+                              value: currencyFormat.format(totalRevenue),
+                              icon: Icons.monetization_on_outlined,
+                              color: Colors.green,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+
+                      // Section Title
+                      _buildSectionTitle(theme, filtered.length),
+                      const SizedBox(height: 12),
+
+                      if (filtered.isEmpty)
+                        _buildEmptyState()
+                      else
+                        ...filtered.map((i) => _buildInvoiceCard(i, cs, theme)),
+                    ]),
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
       ),
     );
   }
 
-  // Hàm refresh riêng
   Future<void> _onRefresh() async {
     await context.read<InvoiceViewmodel>().fetchInvoices();
   }
 
-  // ─── WIDGETS ───────────────────────────────────────────────────────────────
-
   Widget _buildSectionTitle(ThemeData theme, int count) {
     return Text(
-      'Danh sách hóa đơn ($count)',
-      style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+      '${context.l10n.invoice_list ?? "Danh sách hóa đơn"} ($count)',
+      style: theme.textTheme.titleMedium?.copyWith(
+        fontWeight: FontWeight.bold,
+      ),
     );
   }
 
@@ -146,87 +148,93 @@ class _InvoiceListScreenState extends State<InvoiceListScreen> {
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16), // Padding moves here
       decoration: BoxDecoration(
         color: cs.surface,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: cs.outlineVariant.withOpacity(0.5)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
+            color: cs.shadow.withOpacity(0.05),
+            blurRadius: 15,
             offset: const Offset(0, 4),
           )
         ],
       ),
-      child: ListTile(
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        onTap: () => context.push(AppRoutes.invoiceDetail, extra: invoice.id),
-        leading: Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: statusColor.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Icon(Icons.receipt_long, color: statusColor),
-        ),
-        title: Row(
+      child: InkWell(
+        // For tap functionality
+        onTap: () => _showInvoiceMenu(invoice),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start, // Align top
           children: [
+            // Leading Icon
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: statusColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Icon(Icons.receipt_long_rounded, color: statusColor),
+            ),
+            const SizedBox(width: 12),
+
+            // Title & Subtitle logic
             Expanded(
-              child: Text(
-                invoice.invoiceNumber,
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    invoice.invoiceNumber,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    invoice.customerName,
+                    style: theme.textTheme.bodyMedium
+                        ?.copyWith(color: cs.onSurfaceVariant),
+                  ),
+                  Text(
+                    DateFormat('dd/MM/yyyy').format(invoice.date),
+                    style: theme.textTheme.bodySmall,
+                  ),
+                ],
+              ),
+            ),
+
+            // Trailing logic
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                _buildStatusBadge(invoice.status, statusColor, theme),
+                const SizedBox(height: 4),
+                Text(
+                  '${currencyFormat.format(invoice.total ?? 0)} đ',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    color: cs.primary,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-              ),
+                if ((invoice.balanceDue ?? 0) > 0)
+                  Text(
+                    'Còn nợ: ${currencyFormat.format(invoice.balanceDue ?? 0)}',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: cs.error,
+                      fontSize: 11,
+                    ),
+                  ),
+              ],
             ),
-            _buildStatusBadge(invoice.status, statusColor),
-          ],
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 4),
-            Text(
-              invoice.customerName,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: cs.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              DateFormat('dd/MM/yyyy').format(invoice.date),
-              style: theme.textTheme.bodySmall,
-            ),
-          ],
-        ),
-        trailing: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Text(
-              '${currencyFormat.format(invoice.total)} đ',
-              style: TextStyle(
-                color: cs.primary,
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
-            ),
-            if (invoice.balanceDue > 0)
-              Text(
-                'Còn nợ: ${currencyFormat.format(invoice.balanceDue)}',
-                style: const TextStyle(
-                  color: Colors.red,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildStatusBadge(String status, Color color) {
+  // Status Badge
+  Widget _buildStatusBadge(String status, Color color, ThemeData theme) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
@@ -235,9 +243,8 @@ class _InvoiceListScreenState extends State<InvoiceListScreen> {
       ),
       child: Text(
         status.toUpperCase(),
-        style: TextStyle(
+        style: theme.textTheme.labelSmall?.copyWith(
           color: color,
-          fontSize: 10,
           fontWeight: FontWeight.bold,
         ),
       ),
@@ -259,17 +266,34 @@ class _InvoiceListScreenState extends State<InvoiceListScreen> {
     }
   }
 
+  // Menu Action (giống Category)
+  void _showInvoiceMenu(Invoice invoice) {
+    showIosActionSheet(
+      context: context,
+      name: invoice.invoiceNumber,
+      onDetail: () {
+        context.push(AppRoutes.invoiceDetail, extra: invoice.id);
+      },
+      onEdit: () {
+        // context.push(AppRoutes.invoiceEdit, extra: invoice); // nếu có route edit
+      },
+      onDelete: () async {
+        return false;
+      },
+    );
+  }
+
   Widget _buildEmptyState() {
-    return const Center(
+    return Center(
       child: Padding(
-        padding: EdgeInsets.symmetric(vertical: 80),
+        padding: const EdgeInsets.symmetric(vertical: 80),
         child: Column(
           children: [
             Icon(Icons.receipt_outlined, size: 64, color: Colors.grey),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             Text(
-              "Không tìm thấy hóa đơn nào",
-              style: TextStyle(color: Colors.grey),
+              context.l10n.no_data ?? "Không tìm thấy hóa đơn nào",
+              style: const TextStyle(color: Colors.grey),
             ),
           ],
         ),
