@@ -41,6 +41,7 @@ class SupplierViewmodel extends ChangeNotifier {
       notifyListeners();
     }
   }
+
   Future<bool> deleteSupplier(int id) async {
     try {
       await _repo.deleteSupplier(id);
@@ -54,4 +55,24 @@ class SupplierViewmodel extends ChangeNotifier {
     }
   }
 
+  Future<bool> updateSupplier(int id, Supplier supplierData) async {
+    try {
+      isLoading = true;
+      error = null;
+      notifyListeners();
+      final updatedSupplier = await _repo.updateSupplier(id, supplierData);
+      final index = suppliers.indexWhere((e) => e.id == id);
+      if (index != -1) {
+        suppliers[index] = updatedSupplier;
+      }
+      notifyListeners();
+      return true;
+    } catch (e) {
+      error = e.toString();
+      return false;
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
+  }
 }

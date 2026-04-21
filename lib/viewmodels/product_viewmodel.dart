@@ -51,7 +51,6 @@ class ProductViewModel extends ChangeNotifier {
       notifyListeners();
 
       final updated = await _repo.updateProduct(id, product);
-
       final index = products.indexWhere((e) => e.id == id);
       if (index != -1) {
         products[index] = updated;

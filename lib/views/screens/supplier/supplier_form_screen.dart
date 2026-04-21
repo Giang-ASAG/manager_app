@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:manager/core/extensions/l10n_extension.dart';
 import 'package:manager/core/utils/app_responsive.dart';
 import 'package:manager/data/models/supplier.dart';
 import 'package:manager/viewmodels/supplier_viewmodel.dart';
@@ -11,7 +12,9 @@ import 'package:manager/views/widgets/app_sliver_app_bar.dart';
 import 'package:manager/views/widgets/app_snackbar.dart';
 
 class SupplierFormScreen extends StatefulWidget {
-  const SupplierFormScreen({super.key});
+  final Supplier? supplier;
+
+  const SupplierFormScreen({super.key, this.supplier});
 
   @override
   State<SupplierFormScreen> createState() => _SupplierFormScreenState();
@@ -20,15 +23,33 @@ class SupplierFormScreen extends StatefulWidget {
 class _SupplierFormScreenState extends State<SupplierFormScreen> {
   final _formKey = GlobalKey<FormState>();
 
-  // Controllers cho các trường dữ liệu
+  // Controllers
   final _nameController = TextEditingController();
-  final _contactPersonController = TextEditingController(); // Thêm cho Supplier
+  final _contactPersonController = TextEditingController();
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   final _addressController = TextEditingController();
   final _cityController = TextEditingController();
 
   bool _isActive = true;
+  bool _isEditMode = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _isEditMode = widget.supplier != null;
+
+    if (_isEditMode && widget.supplier != null) {
+      final s = widget.supplier!;
+      _nameController.text = s.name ?? '';
+      _contactPersonController.text = s.contactPerson ?? '';
+      _emailController.text = s.email ?? '';
+      _phoneController.text = s.phone ?? '';
+      _addressController.text = s.address ?? '';
+      _cityController.text = s.city ?? '';
+      //_isActive = s.status?.toLowerCase() == 'active' || s.status == '1';
+    }
+  }
 
   @override
   void dispose() {
@@ -45,25 +66,44 @@ class _SupplierFormScreenState extends State<SupplierFormScreen> {
     if (_formKey.currentState!.validate()) {
       final supplierVM = context.read<SupplierViewmodel>();
 
-      // Tạo Model Supplier để gửi lên API
       final Supplier supplierData = Supplier(
-          id: 0,
-          name: _nameController.text.trim(),
-          contactPerson: _contactPersonController.text.trim(),
-          status: _isActive ? "Active" : "Inactive",
-          address: _addressController.text.trim(),
-          city: _cityController.text.trim(),
-          email: _emailController.text.trim(),
-          phone: _phoneController.text.trim());
+        id: _isEditMode ? widget.supplier!.id : 0,
+        name: _nameController.text.trim(),
+        contactPerson: _contactPersonController.text.trim(),
+        email: _emailController.text.trim(),
+        phone: _phoneController.text.trim(),
+        address: _addressController.text.trim(),
+        city: _cityController.text.trim(),
+      );
 
-      final success = await supplierVM.createSupplier(supplierData);
+      bool success = false;
+
+      if (_isEditMode) {
+        success =
+            await supplierVM.updateSupplier(widget.supplier!.id!, supplierData);
+      } else {
+        success = await supplierVM.createSupplier(supplierData);
+      }
 
       if (mounted) {
         if (success) {
-          AppSnackbar.showSuccess(context, "Thêm nhà cung cấp thành công");
+          AppSnackbar.showSuccess(
+            context,
+            _isEditMode
+                ? context.l10n.action_success(
+                    context.l10n.common_edit, context.l10n.supplier)
+                : context.l10n.action_success(
+                    context.l10n.common_add, context.l10n.supplier),
+          );
           context.pop();
         } else {
-          AppSnackbar.showError(context, 'Lỗi: ${supplierVM.error}');
+          AppSnackbar.showError(
+              context,
+              _isEditMode
+                  ? context.l10n.action_failed(context.l10n.common_edit,
+                      context.l10n.supplier.toLowerCase())
+                  : context.l10n.action_failed(context.l10n.common_add,
+                      context.l10n.supplier.toLowerCase()));
         }
       }
     }
@@ -78,13 +118,16 @@ class _SupplierFormScreenState extends State<SupplierFormScreen> {
       backgroundColor: cs.surfaceContainerLowest,
       body: CustomScrollView(
         slivers: [
-          const AppSliverAppBar(
-            title: 'Thêm nhà cung cấp mới',
+          AppSliverAppBar(
+            title: _isEditMode
+                ? context.l10n.supplier_edit
+                : context.l10n.supplier_add,
             showBackButton: true,
             height: 80,
           ),
           SliverPadding(
-            padding: EdgeInsets.fromLTRB(context.rw(16), context.rh(24), context.rw(16), context.rh(120)),
+            padding: EdgeInsets.fromLTRB(context.rw(16), context.rh(24),
+                context.rw(16), context.rh(120)),
             sliver: SliverToBoxAdapter(
               child: Form(
                 key: _formKey,
@@ -98,8 +141,9 @@ class _SupplierFormScreenState extends State<SupplierFormScreen> {
                       label: 'Tên nhà cung cấp *',
                       hint: 'Ví dụ: Công ty Thép Hòa Phát',
                       icon: Icons.business_rounded,
-                      validator: (v) =>
-                          v!.isEmpty ? 'Vui lòng nhập tên nhà cung cấp' : null,
+                      validator: (v) => v!.trim().isEmpty
+                          ? 'Vui lòng nhập tên nhà cung cấp'
+                          : null,
                     ),
                     SizedBox(height: context.rh(16)),
                     _buildTextField(
@@ -119,9 +163,12 @@ class _SupplierFormScreenState extends State<SupplierFormScreen> {
                       icon: Icons.email_outlined,
                       keyboardType: TextInputType.emailAddress,
                       validator: (v) {
-                        if (v!.isEmpty) return 'Vui lòng nhập email';
+                        final value = v?.trim() ?? '';
+                        if (value.isEmpty) return 'Vui lòng nhập email';
                         if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
-                            .hasMatch(v)) return 'Email không hợp lệ';
+                            .hasMatch(value)) {
+                          return 'Email không hợp lệ';
+                        }
                         return null;
                       },
                     ),
@@ -152,45 +199,14 @@ class _SupplierFormScreenState extends State<SupplierFormScreen> {
                       icon: Icons.map_outlined,
                     ),
                     SizedBox(height: context.rh(24)),
-                    _buildSectionTitle(context, "Trạng thái hợp tác"),
-                    Container(
-                      padding: EdgeInsets.all(context.rw(12)),
-                      decoration: _fieldDecoration(context),
-                      child: Row(
-                        children: [
-                          Icon(
-                              _isActive
-                                  ? Icons.check_circle_outline
-                                  : Icons.block_flipped,
-                              color: _isActive ? Colors.green : cs.error),
-                          SizedBox(width: context.rw(12)),
-                          Expanded(
-                            child: Text(
-                              _isActive
-                                  ? "Đang hoạt động (Active)"
-                                  : "Ngừng hoạt động (Inactive)",
-                              style: TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: context.sp(14),
-                                  color: _isActive ? Colors.green : cs.error),
-                            ),
-                          ),
-                          Switch(
-                            value: _isActive,
-                            onChanged: (val) => setState(() => _isActive = val),
-                            activeColor: Colors.green,
-                          ),
-                        ],
+                    if (_isEditMode && widget.supplier?.createdAt != null)
+                      Text(
+                        "Ngày đăng ký: ${widget.supplier?.createdAt}",
+                        style: Theme.of(context)
+                            .textTheme
+                            .bodySmall
+                            ?.copyWith(color: cs.outline),
                       ),
-                    ),
-                    SizedBox(height: context.rh(20)),
-                    Text(
-                      "Ngày đăng ký: ${DateFormat('dd/MM/yyyy').format(DateTime.now())}",
-                      style: Theme.of(context)
-                          .textTheme
-                          .bodySmall
-                          ?.copyWith(color: cs.outline),
-                    ),
                   ],
                 ),
               ),
@@ -200,9 +216,10 @@ class _SupplierFormScreenState extends State<SupplierFormScreen> {
       ),
       bottomSheet: SafeArea(
         child: Padding(
-          padding: EdgeInsets.fromLTRB(context.rw(16), context.rh(12), context.rw(16), context.rh(30)),
+          padding: EdgeInsets.fromLTRB(
+              context.rw(16), context.rh(12), context.rw(16), context.rh(30)),
           child: AppButton(
-            text: "Lưu nhà cung cấp",
+            text: context.l10n.supplier_save,
             isLoading: supplierVM.isLoading,
             onPressed: _saveSupplier,
           ),
@@ -211,7 +228,7 @@ class _SupplierFormScreenState extends State<SupplierFormScreen> {
     );
   }
 
-  // --- Helpers giữ nguyên cấu trúc cũ của bạn ---
+  // ==================== Helper Widgets (giữ nguyên) ====================
 
   Widget _buildSectionTitle(BuildContext context, String title) {
     return Padding(
@@ -240,7 +257,9 @@ class _SupplierFormScreenState extends State<SupplierFormScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: TextStyle(fontWeight: FontWeight.bold, fontSize: context.sp(14))),
+        Text(label,
+            style: TextStyle(
+                fontWeight: FontWeight.bold, fontSize: context.sp(14))),
         SizedBox(height: context.rh(8)),
         Container(
           decoration: _fieldDecoration(context),
@@ -252,8 +271,8 @@ class _SupplierFormScreenState extends State<SupplierFormScreen> {
               hintText: hint,
               prefixIcon: Icon(icon, color: cs.primary, size: context.sp(20)),
               border: InputBorder.none,
-              contentPadding:
-                  EdgeInsets.symmetric(horizontal: context.rw(16), vertical: context.rh(14)),
+              contentPadding: EdgeInsets.symmetric(
+                  horizontal: context.rw(16), vertical: context.rh(14)),
             ),
           ),
         ),

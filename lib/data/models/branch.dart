@@ -31,4 +31,17 @@ class Branch {
       status: json['status'] ?? 'Active',
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'code': code,
+      'name': name,
+      'phone': phone,
+      'email': email,
+      'address': address,
+      'city': city,
+      'status': status,
+    };
+  }
 }

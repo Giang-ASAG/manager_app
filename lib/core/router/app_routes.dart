@@ -15,6 +15,8 @@ class AppRoutes {
   //Customers
   static const customers = "/customers";
   static const customerAdd = "/customers/add";
+  static const customerDetail = "/customers/detail/:id";
+  static const customerEdit = "/customers/edit/:id";
 
   static const invoices = "/invoices";
   static const invoiceAdd = "/invoice/add";
@@ -22,5 +24,7 @@ class AppRoutes {
 
   static const suppliers = "/suppliers";
   static const supplierAdd = "/supplier/add";
+  static const supplierDetail = "/supplier/detail/:id";
+  static const supplierEdit = "/supplier/edit/:id";
 
 }

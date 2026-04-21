@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:manager/core/extensions/l10n_extension.dart';
 import 'package:manager/core/utils/app_responsive.dart';
 import 'package:manager/data/models/customer.dart';
 import 'package:manager/viewmodels/customer_viewmodel.dart';
@@ -11,16 +12,18 @@ import 'package:manager/views/widgets/app_sliver_app_bar.dart';
 import 'package:manager/views/widgets/app_snackbar.dart';
 
 class CustomerFormScreen extends StatefulWidget {
-  const CustomerFormScreen({super.key});
+  final Customer? customer;
+
+  const CustomerFormScreen({super.key, this.customer});
 
   @override
-  State<CustomerFormScreen> createState() => _CustomersFormScreenState();
+  State<CustomerFormScreen> createState() => _CustomerFormScreenState();
 }
 
-class _CustomersFormScreenState extends State<CustomerFormScreen> {
+class _CustomerFormScreenState extends State<CustomerFormScreen> {
   final _formKey = GlobalKey<FormState>();
 
-  // Controllers cho các trường dữ liệu
+  // Controllers
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
@@ -28,6 +31,23 @@ class _CustomersFormScreenState extends State<CustomerFormScreen> {
   final _cityController = TextEditingController();
 
   bool _isActive = true;
+  bool _isEditMode = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _isEditMode = widget.customer != null;
+
+    if (_isEditMode && widget.customer != null) {
+      final c = widget.customer!;
+      _nameController.text = c.name ?? '';
+      _emailController.text = c.email ?? '';
+      _phoneController.text = c.phone ?? '';
+      _addressController.text = c.address ?? '';
+      _cityController.text = c.city ?? '';
+      _isActive = c.status?.toLowerCase() == 'active' || c.status == '1';
+    }
+  }
 
   @override
   void dispose() {
@@ -43,24 +63,45 @@ class _CustomersFormScreenState extends State<CustomerFormScreen> {
     if (_formKey.currentState!.validate()) {
       final customerVM = context.read<CustomerViewmodel>();
 
-      // Tạo Map hoặc Model để gửi lên API
       final Customer customerData = Customer(
-          id: 0,
-          name: _nameController.text,
-          status: _isActive == true ? "Active" : "Inactive",
-          address: _addressController.text,
-          city: _cityController.text,
-          email: _emailController.text,
-          phone: _phoneController.text);
+        id: _isEditMode ? widget.customer!.id : 0,
+        name: _nameController.text.trim(),
+        email: _emailController.text.trim(),
+        phone: _phoneController.text.trim(),
+        address: _addressController.text.trim(),
+        city: _cityController.text.trim(),
+        status: _isActive ? "Active" : "Inactive",
+      );
 
-      final success = await customerVM.createCustomer(customerData);
+      bool success = true;
+
+      if (_isEditMode) {
+        success =
+            await customerVM.updateCustomer(customerData.id, customerData);
+      } else {
+        success = await customerVM.createCustomer(customerData);
+      }
 
       if (mounted) {
         if (success) {
-          AppSnackbar.showSuccess(context, "Thêm khách hàng thành công");
-          context.pop();
+          AppSnackbar.showSuccess(
+            context,
+            _isEditMode
+                ? context.l10n.action_success(context.l10n.common_edit,
+                    context.l10n.customer.toLowerCase())
+                : context.l10n.action_success(context.l10n.common_add,
+                    context.l10n.customer.toLowerCase()),
+          );
+          context.pop(); // Quay lại màn hình trước
         } else {
-          AppSnackbar.showError(context, 'Lỗi: ${customerVM.error}');
+          AppSnackbar.showError(
+            context,
+            _isEditMode
+                ? context.l10n.action_failed(context.l10n.common_edit,
+                    context.l10n.customer.toLowerCase())
+                : context.l10n.action_failed(context.l10n.common_add,
+                    context.l10n.customer.toLowerCase()),
+          );
         }
       }
     }
@@ -75,13 +116,16 @@ class _CustomersFormScreenState extends State<CustomerFormScreen> {
       backgroundColor: cs.surfaceContainerLowest,
       body: CustomScrollView(
         slivers: [
-          const AppSliverAppBar(
-            title: 'Thêm khách hàng mới',
+          AppSliverAppBar(
+            title: _isEditMode
+                ? context.l10n.customer_edit
+                : context.l10n.customer_add,
             showBackButton: true,
             height: 80,
           ),
           SliverPadding(
-            padding: EdgeInsets.fromLTRB(context.rw(16), context.rh(24), context.rw(16), context.rh(120)),
+            padding: EdgeInsets.fromLTRB(context.rw(16), context.rh(24),
+                context.rw(16), context.rh(120)),
             sliver: SliverToBoxAdapter(
               child: Form(
                 key: _formKey,
@@ -95,7 +139,8 @@ class _CustomersFormScreenState extends State<CustomerFormScreen> {
                       label: 'Tên khách hàng *',
                       hint: 'Nhập họ và tên',
                       icon: Icons.person_outline_rounded,
-                      validator: (v) => v!.isEmpty ? 'Vui lòng nhập tên' : null,
+                      validator: (v) =>
+                          v!.trim().isEmpty ? 'Vui lòng nhập tên' : null,
                     ),
                     SizedBox(height: context.rh(16)),
                     _buildTextField(
@@ -106,9 +151,11 @@ class _CustomersFormScreenState extends State<CustomerFormScreen> {
                       icon: Icons.email_outlined,
                       keyboardType: TextInputType.emailAddress,
                       validator: (v) {
-                        if (v!.isEmpty) return 'Vui lòng nhập email';
+                        if (v!.trim().isEmpty) return 'Vui lòng nhập email';
                         if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
-                            .hasMatch(v)) return 'Email không hợp lệ';
+                            .hasMatch(v)) {
+                          return 'Email không hợp lệ';
+                        }
                         return null;
                       },
                     ),
@@ -146,10 +193,11 @@ class _CustomersFormScreenState extends State<CustomerFormScreen> {
                       child: Row(
                         children: [
                           Icon(
-                              _isActive
-                                  ? Icons.check_circle_outline
-                                  : Icons.block_flipped,
-                              color: _isActive ? Colors.green : cs.error),
+                            _isActive
+                                ? Icons.check_circle_outline
+                                : Icons.block_flipped,
+                            color: _isActive ? Colors.green : cs.error,
+                          ),
                           SizedBox(width: context.rw(12)),
                           Expanded(
                             child: Text(
@@ -157,9 +205,10 @@ class _CustomersFormScreenState extends State<CustomerFormScreen> {
                                   ? "Đang hoạt động (Active)"
                                   : "Ngừng hoạt động (Inactive)",
                               style: TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: context.sp(14),
-                                  color: _isActive ? Colors.green : cs.error),
+                                fontWeight: FontWeight.w600,
+                                fontSize: context.sp(14),
+                                color: _isActive ? Colors.green : cs.error,
+                              ),
                             ),
                           ),
                           Switch(
@@ -171,13 +220,14 @@ class _CustomersFormScreenState extends State<CustomerFormScreen> {
                       ),
                     ),
                     SizedBox(height: context.rh(20)),
-                    Text(
-                      "Ngày khởi tạo: ${DateFormat('dd/MM/yyyy').format(DateTime.now())}",
-                      style: Theme.of(context)
-                          .textTheme
-                          .bodySmall
-                          ?.copyWith(color: cs.outline),
-                    ),
+                    if (_isEditMode && widget.customer?.createdAt != null)
+                      Text(
+                        "Ngày tạo: ${DateFormat('dd/MM/yyyy').format(widget.customer!.createdAt!)}",
+                        style: Theme.of(context)
+                            .textTheme
+                            .bodySmall
+                            ?.copyWith(color: cs.outline),
+                      ),
                   ],
                 ),
               ),
@@ -187,9 +237,10 @@ class _CustomersFormScreenState extends State<CustomerFormScreen> {
       ),
       bottomSheet: SafeArea(
         child: Padding(
-          padding: EdgeInsets.fromLTRB(context.rw(16), context.rh(12), context.rw(16), context.rh(30)),
+          padding: EdgeInsets.fromLTRB(
+              context.rw(16), context.rh(12), context.rw(16), context.rh(30)),
           child: AppButton(
-            text: "Lưu khách hàng",
+            text: context.l10n.customer_save,
             isLoading: customerVM.isLoading,
             onPressed: _saveCustomer,
           ),
@@ -198,7 +249,7 @@ class _CustomersFormScreenState extends State<CustomerFormScreen> {
     );
   }
 
-  // --- Helpers ---
+  // ==================== Helper Widgets ====================
 
   Widget _buildSectionTitle(BuildContext context, String title) {
     return Padding(
@@ -227,7 +278,9 @@ class _CustomersFormScreenState extends State<CustomerFormScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: TextStyle(fontWeight: FontWeight.bold, fontSize: context.sp(14))),
+        Text(label,
+            style: TextStyle(
+                fontWeight: FontWeight.bold, fontSize: context.sp(14))),
         SizedBox(height: context.rh(8)),
         Container(
           decoration: _fieldDecoration(context),
@@ -239,8 +292,10 @@ class _CustomersFormScreenState extends State<CustomerFormScreen> {
               hintText: hint,
               prefixIcon: Icon(icon, color: cs.primary, size: context.sp(20)),
               border: InputBorder.none,
-              contentPadding:
-                  EdgeInsets.symmetric(horizontal: context.rw(16), vertical: context.rh(14)),
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: context.rw(16),
+                vertical: context.rh(14),
+              ),
             ),
           ),
         ),

@@ -1,13 +1,16 @@
 // lib/router/app_router.dart
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:manager/data/models/customer.dart';
 import 'package:manager/data/models/product.dart';
+import 'package:manager/data/models/supplier.dart';
 import 'package:manager/data/repositories/manager_repository.dart';
 import 'package:manager/viewmodels/auth_viewmodel.dart';
 
 import 'package:manager/views/screens/auth/login_screen.dart';
 import 'package:manager/views/screens/categories/categories_form_screen.dart';
 import 'package:manager/views/screens/categories/categories_list_screen.dart';
+import 'package:manager/views/screens/customer/customer_detail_screen.dart';
 import 'package:manager/views/screens/customer/customer_form_screen.dart';
 import 'package:manager/views/screens/customer/customer_list_screen.dart';
 import 'package:manager/views/screens/dashboard/dashboard_screen.dart';
@@ -18,6 +21,7 @@ import 'package:manager/views/screens/main/main_screen.dart';
 import 'package:manager/views/screens/product/product_detail_screen.dart';
 import 'package:manager/views/screens/product/product_form_screen.dart';
 import 'package:manager/views/screens/product/product_list_screen.dart';
+import 'package:manager/views/screens/supplier/supplier_detail_screen.dart';
 import 'package:manager/views/screens/supplier/supplier_form_screen.dart';
 import 'package:manager/views/screens/supplier/supplier_list_screen.dart';
 
@@ -72,7 +76,14 @@ class AppRouter {
 
         GoRoute(
           path: AppRoutes.productAdd,
-          builder: (context, state) => const ProductFormScreen(),
+          builder: (context, state) => ProductFormScreen(),
+        ),
+        GoRoute(
+          path: AppRoutes.productEdit,
+          builder: (context, state) {
+            final product = state.extra as Product;
+            return ProductFormScreen(product: product);
+          },
         ),
         GoRoute(
           path: AppRoutes.productDetail,
@@ -98,7 +109,24 @@ class AppRouter {
           path: AppRoutes.customerAdd,
           builder: (context, state) => const CustomerFormScreen(),
         ),
-
+        GoRoute(
+          path: AppRoutes.customerDetail,
+          builder: (context, state) {
+            final customer = state.extra as Customer;
+            return CustomerDetailScreen(
+              customer: customer,
+            );
+          },
+        ),
+        GoRoute(
+          path: AppRoutes.customerEdit,
+          builder: (context, state) {
+            final customer = state.extra as Customer;
+            return CustomerFormScreen(
+              customer: customer,
+            );
+          },
+        ),
         GoRoute(
           path: AppRoutes.suppliers,
           builder: (context, state) => const SupplierListScreen(),
@@ -106,6 +134,24 @@ class AppRouter {
         GoRoute(
           path: AppRoutes.supplierAdd,
           builder: (context, state) => const SupplierFormScreen(),
+        ),
+        GoRoute(
+          path: AppRoutes.supplierDetail,
+          builder: (context, state) {
+            final supplier = state.extra as Supplier;
+            return SupplierDetailScreen(
+              supplier: supplier,
+            );
+          },
+        ),
+        GoRoute(
+          path: AppRoutes.supplierEdit,
+          builder: (context, state) {
+            final supplier = state.extra as Supplier;
+            return SupplierFormScreen(
+              supplier: supplier,
+            );
+          },
         ),
 
         GoRoute(

@@ -147,8 +147,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
           context: context,
           name: p.name,
           onEdit: () {
-            // TODO: Thay bằng route edit nếu bạn đã có
-            // context.push(AppRoutes.productEdit, extra: p);
+            context.push(AppRoutes.productEdit, extra: p);
           },
           onDetail: () {
             context.push(AppRoutes.productDetail, extra: p);
@@ -199,12 +198,12 @@ class _ProductListScreenState extends State<ProductListScreen> {
             Row(
               children: [
                 Text(
-                  'Kho: ${p.unitsPerPack ?? 0}',
+                  'Kho: ${p.quantity ?? 0}',
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: (p.unitsPerPack ?? 0) < 5
+                    color: (p.quantity ?? 0) < 5
                         ? cs.error
                         : cs.onSurfaceVariant,
-                    fontWeight: (p.unitsPerPack ?? 0) < 5
+                    fontWeight: (p.quantity ?? 0) < 5
                         ? FontWeight.bold
                         : FontWeight.normal,
                     fontSize: context.sp(12),

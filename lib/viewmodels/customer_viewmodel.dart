@@ -43,7 +43,7 @@ class CustomerViewmodel extends ChangeNotifier {
     }
   }
 
-  Future<bool> deleteCustomer (int id) async {
+  Future<bool> deleteCustomer(int id) async {
     try {
       await _repo.deleteCustomer(id);
       customers.removeWhere((e) => e.id == id);
@@ -53,6 +53,25 @@ class CustomerViewmodel extends ChangeNotifier {
       error = e.toString();
       notifyListeners();
       return false;
+    }
+  }
+
+  Future<bool> updateCustomer(int id, Customer customer) async {
+    try {
+      isLoading = true;
+      notifyListeners();
+      final updated = await _repo.updateProduct(id, customer);
+      final index = customers.indexWhere((e) => e.id == id);
+      if (index != -1) {
+        customers[index] = updated;
+      }
+      return true;
+    } catch (e) {
+      error = e.toString();
+      return false;
+    } finally {
+      isLoading = false;
+      notifyListeners();
     }
   }
 }

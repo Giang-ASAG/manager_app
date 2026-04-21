@@ -1,18 +1,16 @@
 import 'package:flutter/cupertino.dart'; // ← Thêm import này
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:manager/core/extensions/l10n_extension.dart';
 import 'package:manager/core/router/app_routes.dart';
 import 'package:manager/data/models/supplier.dart';
 import 'package:manager/viewmodels/supplier_viewmodel.dart';
 import 'package:manager/views/widgets/app_search_field.dart';
 import 'package:manager/views/widgets/app_sliver_app_bar.dart';
-import 'package:manager/views/widgets/app_snackbar.dart';
-import 'package:manager/views/widgets/custom_popup.dart';
 import 'package:manager/views/widgets/ios_action_sheet.dart';
 import 'package:manager/views/widgets/shared/app_add_button.dart';
 import 'package:manager/views/widgets/shared/app_summary_card.dart';
 import 'package:provider/provider.dart';
-import 'package:rflutter_alert/rflutter_alert.dart';
 
 class SupplierListScreen extends StatefulWidget {
   const SupplierListScreen({super.key});
@@ -68,7 +66,7 @@ class _SupplierListScreenState extends State<SupplierListScreen> {
             slivers: [
               // ==================== HEADER ====================
               AppSliverAppBar(
-                title: 'Nhà cung cấp',
+                title: context.l10n.supplier,
                 showBackButton: true,
                 height: 150,
                 actions: [
@@ -91,7 +89,7 @@ class _SupplierListScreenState extends State<SupplierListScreen> {
                 sliver: SliverList(
                   delegate: SliverChildListDelegate([
                     AppSummaryCard(
-                      label: "Đối tác cung ứng",
+                      label: context.l10n.supplier_list,
                       value: "${filtered.length}",
                       icon: Icons.local_shipping_outlined,
                       color: Colors.orange,
@@ -146,8 +144,12 @@ class _SupplierListScreenState extends State<SupplierListScreen> {
                 .read<SupplierViewmodel>()
                 .deleteSupplier(supplier.id!);
           },
-          onEdit: () {},
-          onDetail: () {},
+          onEdit: () {
+            context.push(AppRoutes.supplierEdit, extra: supplier);
+          },
+          onDetail: () {
+            context.push(AppRoutes.supplierDetail, extra: supplier);
+          },
         ),
         child: Padding(
           padding: const EdgeInsets.all(16),

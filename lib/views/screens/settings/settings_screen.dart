@@ -18,6 +18,8 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
+  bool _isLoggingOut = false;
+
   Future<void> _onLogout() async {
     showPopup(
       context: context,
@@ -26,8 +28,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
       content: context.l10n.confirm_logout,
       onCancelPressed: () {},
       onOkPressed: () async {
-        await context.read<AuthViewModel>().logout();
-        AppSnackbar.showSuccess(context, context.l10n.logout_success);
+        setState(() => _isLoggingOut = true);
+        try {
+          await context.read<AuthViewModel>().logout();
+          if (mounted) {
+            AppSnackbar.showSuccess(context, context.l10n.logout_success);
+          }
+        } finally {
+          if (mounted) setState(() => _isLoggingOut = false);
+        }
       },
     );
   }
@@ -41,101 +50,135 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final isDark = themeVM.isDark;
     final langVM = context.watch<LanguageViewModel>();
     final currentLang = langVM.locale.languageCode;
-    return Scaffold(
-      backgroundColor: cs.surfaceContainerLowest,
-      body: CustomScrollView(
-        slivers: [
-          AppSliverAppBar(
-            title: context.l10n.settings,
-            height: 80,
+    return Stack(
+      children: [
+        Scaffold(
+          backgroundColor: cs.surfaceContainerLowest,
+          body: CustomScrollView(
+            slivers: [
+              AppSliverAppBar(
+                title: context.l10n.settings,
+                height: 80,
+              ),
+              SliverPadding(
+                padding: EdgeInsets.fromLTRB(
+                  r.w(16),
+                  r.h(20),
+                  r.w(16),
+                  r.h(32),
+                ),
+                sliver: SliverList(
+                  delegate: SliverChildListDelegate([
+                    // ── Giao diện ──────────────────────────────────────────
+                    _SectionLabel(label: context.l10n.theme_text, r: r),
+                    SizedBox(height: r.h(8)),
+                    _SettingsCard(
+                      r: r,
+                      children: [
+                        _SwitchTile(
+                          r: r,
+                          icon: isDark
+                              ? Icons.dark_mode_rounded
+                              : Icons.light_mode_rounded,
+                          title: context.l10n.theme_text,
+                          value: isDark,
+                          onChanged: (value) {
+                            context.read<ThemeViewModel>().toggleTheme();
+                          },
+                        ),
+                      ],
+                    ),
+
+                    SizedBox(height: r.h(24)),
+
+                    // ── Ngôn ngữ ───────────────────────────────────────────
+                    _SectionLabel(label: context.l10n.language_text, r: r),
+                    SizedBox(height: r.h(8)),
+                    _SettingsCard(
+                      r: r,
+                      children: [
+                        _RadioTile(
+                          r: r,
+                          icon: Icons.language_rounded,
+                          title: context.l10n.vi,
+                          value: 'vi',
+                          groupValue: currentLang,
+                          onChanged: (value) {
+                            context
+                                .read<LanguageViewModel>()
+                                .setLanguage(value!);
+                          },
+                        ),
+                        Divider(
+                          height: 1,
+                          indent: r.w(56),
+                          color: theme.colorScheme.outlineVariant,
+                        ),
+                        _RadioTile(
+                          r: r,
+                          icon: Icons.language_rounded,
+                          title: context.l10n.en,
+                          value: 'en',
+                          groupValue: currentLang,
+                          onChanged: (value) {
+                            context
+                                .read<LanguageViewModel>()
+                                .setLanguage(value!);
+                          },
+                        ),
+                      ],
+                    ),
+
+                    SizedBox(height: r.h(24)),
+
+                    // ── Tài khoản ──────────────────────────────────────────
+                    _SectionLabel(label: 'Tài khoản', r: r),
+                    SizedBox(height: r.h(8)),
+                    _SettingsCard(
+                      r: r,
+                      children: [
+                        _ActionTile(
+                          r: r,
+                          icon: Icons.logout_rounded,
+                          title: context.l10n.logout_text,
+                          color: theme.colorScheme.error,
+                          onTap: _onLogout,
+                        ),
+                      ],
+                    ),
+                  ]),
+                ),
+              ),
+            ],
           ),
-          SliverPadding(
-            padding: EdgeInsets.fromLTRB(
-              r.w(16),
-              r.h(20),
-              r.w(16),
-              r.h(32),
-            ),
-            sliver: SliverList(
-              delegate: SliverChildListDelegate([
-                // ── Giao diện ──────────────────────────────────────────
-                _SectionLabel(label: context.l10n.theme_text, r: r),
-                SizedBox(height: r.h(8)),
-                _SettingsCard(
-                  r: r,
-                  children: [
-                    _SwitchTile(
-                      r: r,
-                      icon: isDark
-                          ? Icons.dark_mode_rounded
-                          : Icons.light_mode_rounded,
-                      title: context.l10n.theme_text,
-                      value: isDark,
-                      onChanged: (value) {
-                        context.read<ThemeViewModel>().toggleTheme();
-                      },
-                    ),
-                  ],
+        ),
+        if (_isLoggingOut)
+          Container(
+            color: Colors.black.withOpacity(0.3),
+            child: Center(
+              child: Card(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
                 ),
-
-                SizedBox(height: r.h(24)),
-
-                // ── Ngôn ngữ ───────────────────────────────────────────
-                _SectionLabel(label: context.l10n.language_text, r: r),
-                SizedBox(height: r.h(8)),
-                _SettingsCard(
-                  r: r,
-                  children: [
-                    _RadioTile(
-                      r: r,
-                      icon: Icons.language_rounded,
-                      title: context.l10n.vi,
-                      value: 'vi',
-                      groupValue: currentLang,
-                      onChanged: (value) {
-                        context.read<LanguageViewModel>().setLanguage(value!);
-                      },
-                    ),
-                    Divider(
-                      height: 1,
-                      indent: r.w(56),
-                      color: theme.colorScheme.outlineVariant,
-                    ),
-                    _RadioTile(
-                      r: r,
-                      icon: Icons.language_rounded,
-                      title: context.l10n.en,
-                      value: 'en',
-                      groupValue: currentLang,
-                      onChanged: (value) {
-                        context.read<LanguageViewModel>().setLanguage(value!);
-                      },
-                    ),
-                  ],
+                child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      CircularProgressIndicator(color: cs.primary),
+                      const SizedBox(height: 16),
+                      Text(
+                        context.l10n.logout_text + '...',
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                    ],
+                  ),
                 ),
-
-                SizedBox(height: r.h(24)),
-
-                // ── Tài khoản ──────────────────────────────────────────
-                _SectionLabel(label: 'Tài khoản', r: r),
-                SizedBox(height: r.h(8)),
-                _SettingsCard(
-                  r: r,
-                  children: [
-                    _ActionTile(
-                      r: r,
-                      icon: Icons.logout_rounded,
-                      title: context.l10n.logout_text,
-                      color: theme.colorScheme.error,
-                      onTap: _onLogout,
-                    ),
-                  ],
-                ),
-              ]),
+              ),
             ),
           ),
-        ],
-      ),
+      ],
     );
   }
 }

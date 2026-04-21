@@ -112,7 +112,6 @@ class _RootAppState extends State<RootApp> {
   Widget build(BuildContext context) {
     final themeVM = context.watch<ThemeViewModel>();
     final langVM = context.watch<LanguageViewModel>();
-// 👈 tạo router
     return MaterialApp.router(
       debugShowCheckedModeBanner: false,
       routerConfig: _router,

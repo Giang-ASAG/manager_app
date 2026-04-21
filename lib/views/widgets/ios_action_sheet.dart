@@ -46,7 +46,7 @@ Future<void> showIosActionSheet({
               context: parentContext,
               type: AlertType.warning,
               title: parentContext.l10n.common_warning,
-              content: parentContext.l10n.confirmDeleteItem(name),
+              content: parentContext.l10n.confirmDeleteItem(name.toLowerCase()),
               onCancelPressed: () {},
               onOkPressed: () async {
                 final success = await onDelete();
@@ -56,7 +56,7 @@ Future<void> showIosActionSheet({
                     parentContext,
                     parentContext.l10n.action_success(
                       parentContext.l10n.common_delete,
-                      name,
+                      name.toLowerCase(),
                     ),
                   );
                 } else {
@@ -64,7 +64,7 @@ Future<void> showIosActionSheet({
                     parentContext,
                     parentContext.l10n.action_failed(
                       parentContext.l10n.common_delete,
-                      name,
+                      name.toLowerCase(),
                     ),
                   );
                 }

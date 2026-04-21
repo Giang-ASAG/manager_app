@@ -49,4 +49,17 @@ class CustomerRepository {
       throw Exception("Lỗi hệ thống: $e");
     }
   }
+
+  Future<Customer> updateProduct(int id, Customer customer) async {
+    try {
+      final response = await _api.dio.put(
+        '/customers/$id',
+        data: customer.toJson(),
+      );
+
+      return Customer.fromJson(response.data);
+    } catch (e) {
+      throw Exception("Failed to update product: $e");
+    }
+  }
 }

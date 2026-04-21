@@ -7,6 +7,7 @@ import 'package:manager/l10n/app_localizations.dart';
 import 'package:manager/viewmodels/auth_viewmodel.dart';
 import 'package:manager/views/widgets/app_actions.dart';
 import 'package:manager/views/widgets/app_button.dart';
+import 'package:manager/views/widgets/app_snackbar.dart';
 import 'package:provider/provider.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -45,13 +46,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (success) {
       context.go(AppRoutes.main);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Login success")),
-      );
+      AppSnackbar.showSuccess(context, context.l10n.login_success);
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(auth.errorMessage ?? "Login failed")),
-      );
+      AppSnackbar.showError(context, context.l10n.login_failed);
     }
   }
 

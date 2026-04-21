@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:manager/core/extensions/l10n_extension.dart';
 import 'package:manager/core/utils/app_responsive.dart';
 import 'package:manager/data/models/category.dart';
 import 'package:manager/viewmodels/categories_viewmodel.dart';
@@ -48,10 +49,16 @@ class _CategoriesFormScreenState extends State<CategoriesFormScreen> {
 
       if (mounted) {
         if (success) {
-          AppSnackbar.showSuccess(context, "Thêm danh mục thành công");
+          AppSnackbar.showSuccess(
+              context,
+              context.l10n.action_success(
+                  context.l10n.common_add, context.l10n.category));
           context.pop();
         } else {
-          AppSnackbar.showError(context, 'Lỗi: ${categoryVM.error}');
+          AppSnackbar.showError(
+              context,
+              context.l10n.action_failed(
+                  context.l10n.common_add, context.l10n.category));
         }
       }
     }
@@ -66,13 +73,14 @@ class _CategoriesFormScreenState extends State<CategoriesFormScreen> {
       backgroundColor: cs.surfaceContainerLowest,
       body: CustomScrollView(
         slivers: [
-          const AppSliverAppBar(
-            title: 'Thêm danh mục mới',
+          AppSliverAppBar(
+            title: context.l10n.category_add,
             showBackButton: true,
-            height: 100,
+            height: 80,
           ),
           SliverPadding(
-            padding: EdgeInsets.fromLTRB(context.rw(16), context.rh(24), context.rw(16), context.rh(120)),
+            padding: EdgeInsets.fromLTRB(context.rw(16), context.rh(24),
+                context.rw(16), context.rh(120)),
             sliver: SliverToBoxAdapter(
               child: Form(
                 key: _formKey,
@@ -87,7 +95,8 @@ class _CategoriesFormScreenState extends State<CategoriesFormScreen> {
                       label: 'Tên danh mục *',
                       hint: 'Ví dụ: Thiết bị văn phòng',
                       icon: Icons.category_rounded,
-                      validator: (v) => v!.isEmpty ? 'Tên không được để trống' : null,
+                      validator: (v) =>
+                          v!.isEmpty ? 'Tên không được để trống' : null,
                     ),
 
                     SizedBox(height: context.rh(20)),
@@ -110,7 +119,10 @@ class _CategoriesFormScreenState extends State<CategoriesFormScreen> {
                       decoration: _fieldDecoration(context),
                       child: Row(
                         children: [
-                          Icon(_isActive ? Icons.visibility_rounded : Icons.visibility_off_rounded,
+                          Icon(
+                              _isActive
+                                  ? Icons.visibility_rounded
+                                  : Icons.visibility_off_rounded,
                               color: _isActive ? cs.primary : cs.error),
                           SizedBox(width: context.rw(12)),
                           Expanded(
@@ -118,18 +130,27 @@ class _CategoriesFormScreenState extends State<CategoriesFormScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  _isActive ? "Đang hoạt động" : "Ngừng hoạt động",
-                                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: context.sp(14),
-                                    color: _isActive ? cs.primary : cs.error,
-                                  ),
+                                  _isActive
+                                      ? "Đang hoạt động"
+                                      : "Ngừng hoạt động",
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodyLarge
+                                      ?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: context.sp(14),
+                                        color:
+                                            _isActive ? cs.primary : cs.error,
+                                      ),
                                 ),
                                 Text(
                                   "Trạng thái danh mục trên hệ thống",
-                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    fontSize: context.sp(12),
-                                  ),
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodySmall
+                                      ?.copyWith(
+                                        fontSize: context.sp(12),
+                                      ),
                                 ),
                               ],
                             ),
@@ -148,9 +169,9 @@ class _CategoriesFormScreenState extends State<CategoriesFormScreen> {
                     Text(
                       "Ngày tạo: ${DateFormat('dd/MM/yyyy').format(DateTime.now())}",
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: cs.outline,
-                        fontStyle: FontStyle.italic,
-                      ),
+                            color: cs.outline,
+                            fontStyle: FontStyle.italic,
+                          ),
                     ),
                   ],
                 ),
@@ -161,7 +182,8 @@ class _CategoriesFormScreenState extends State<CategoriesFormScreen> {
       ),
       bottomSheet: SafeArea(
         child: Padding(
-          padding: EdgeInsets.fromLTRB(context.rw(16), context.rh(12), context.rw(16), context.rh(30)),
+          padding: EdgeInsets.fromLTRB(
+              context.rw(16), context.rh(12), context.rw(16), context.rh(30)),
           child: AppButton(
             text: "Lưu danh mục",
             isLoading: categoryVM.isLoading,
@@ -180,24 +202,24 @@ class _CategoriesFormScreenState extends State<CategoriesFormScreen> {
       child: Text(
         title.toUpperCase(),
         style: Theme.of(context).textTheme.labelMedium?.copyWith(
-          fontWeight: FontWeight.w600,
-          fontSize: context.sp(12),
-          letterSpacing: 0.8,
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
-        ),
+              fontWeight: FontWeight.w600,
+              fontSize: context.sp(12),
+              letterSpacing: 0.8,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
       ),
     );
   }
 
   Widget _buildTextField(
-      BuildContext context, {
-        required TextEditingController controller,
-        required String label,
-        required String hint,
-        required IconData icon,
-        int maxLines = 1,
-        String? Function(String?)? validator,
-      }) {
+    BuildContext context, {
+    required TextEditingController controller,
+    required String label,
+    required String hint,
+    required IconData icon,
+    int maxLines = 1,
+    String? Function(String?)? validator,
+  }) {
     final cs = Theme.of(context).colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -205,9 +227,9 @@ class _CategoriesFormScreenState extends State<CategoriesFormScreen> {
         Text(
           label,
           style: Theme.of(context).textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.w600,
-            fontSize: context.sp(14),
-          ),
+                fontWeight: FontWeight.w600,
+                fontSize: context.sp(14),
+              ),
         ),
         SizedBox(height: context.rh(8)),
         Container(
@@ -218,7 +240,8 @@ class _CategoriesFormScreenState extends State<CategoriesFormScreen> {
             validator: validator,
             decoration: InputDecoration(
               hintText: hint,
-              hintStyle: TextStyle(color: cs.onSurfaceVariant, fontWeight: FontWeight.normal),
+              hintStyle: TextStyle(
+                  color: cs.onSurfaceVariant, fontWeight: FontWeight.normal),
               prefixIcon: Icon(icon, color: cs.primary, size: context.sp(20)),
               border: InputBorder.none,
               contentPadding: EdgeInsets.symmetric(
@@ -239,7 +262,10 @@ class _CategoriesFormScreenState extends State<CategoriesFormScreen> {
       borderRadius: BorderRadius.circular(12),
       border: Border.all(color: cs.outline.withOpacity(0.3)),
       boxShadow: [
-        BoxShadow(color: cs.shadow.withOpacity(0.02), blurRadius: 8, offset: const Offset(0, 2)),
+        BoxShadow(
+            color: cs.shadow.withOpacity(0.02),
+            blurRadius: 8,
+            offset: const Offset(0, 2)),
       ],
     );
   }

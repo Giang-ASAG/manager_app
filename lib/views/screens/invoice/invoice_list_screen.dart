@@ -72,7 +72,7 @@ class _InvoiceListScreenState extends State<InvoiceListScreen> {
               physics: const BouncingScrollPhysics(),
               slivers: [
                 AppSliverAppBar(
-                  title: context.l10n.invoice ?? 'Hóa đơn',
+                  title: context.l10n.invoice,
                   showBackButton: false,
                   height: 150,
                   actions: [
@@ -292,7 +292,7 @@ class _InvoiceListScreenState extends State<InvoiceListScreen> {
             Icon(Icons.receipt_outlined, size: 64, color: Colors.grey),
             const SizedBox(height: 16),
             Text(
-              context.l10n.no_data ?? "Không tìm thấy hóa đơn nào",
+              context.l10n.no_data,
               style: const TextStyle(color: Colors.grey),
             ),
           ],

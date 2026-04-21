@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+import 'package:manager/core/extensions/l10n_extension.dart';
 import 'package:manager/core/utils/app_responsive.dart';
 import 'package:manager/data/models/customer.dart';
 import 'package:manager/data/models/invoice.dart';
@@ -197,10 +198,16 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
         await context.read<InvoiceViewmodel>().createInvoice(newInvoice);
 
     if (success) {
-      AppSnackbar.showSuccess(context, "Tạo hóa đơn thành công");
+      AppSnackbar.showSuccess(
+          context,
+          context.l10n.action_success(
+              context.l10n.common_add, context.l10n.invoice.toLowerCase()));
       Navigator.pop(context);
     } else {
-      AppSnackbar.showError(context, "Tạo hóa đơn thất bại");
+      AppSnackbar.showError(
+          context,
+          context.l10n.action_failed(
+              context.l10n.common_add, context.l10n.invoice.toLowerCase()));
     }
   }
 
@@ -222,8 +229,8 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
             ? const Center(child: CircularProgressIndicator())
             : CustomScrollView(
                 slivers: [
-                  const AppSliverAppBar(
-                    title: 'Tạo Hóa Đơn Mới',
+                  AppSliverAppBar(
+                    title: context.l10n.invoice_add,
                     showBackButton: true,
                     height: 80,
                   ),
@@ -246,9 +253,10 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
       ),
       bottomSheet: SafeArea(
         child: Padding(
-          padding: EdgeInsets.fromLTRB(context.rw(16), context.rh(12), context.rw(16), context.rh(30)),
+          padding: EdgeInsets.fromLTRB(
+              context.rw(16), context.rh(12), context.rw(16), context.rh(30)),
           child: AppButton(
-            text: "Lưu hóa đơn",
+            text: context.l10n.invoice_save,
             isLoading: productVM.isLoading,
             onPressed: _submitForm,
           ),
@@ -268,7 +276,8 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
             label: 'Số Hóa Đơn',
             child: Container(
               width: double.infinity,
-              padding: EdgeInsets.symmetric(horizontal: context.rw(12), vertical: context.rh(12)),
+              padding: EdgeInsets.symmetric(
+                  horizontal: context.rw(12), vertical: context.rh(12)),
               decoration: BoxDecoration(
                 color: cs.surfaceContainerHighest.withOpacity(0.6),
                 border: Border.all(color: cs.outlineVariant),
@@ -415,7 +424,8 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
                   _lineItems.isEmpty
                       ? 'Chưa có sản phẩm'
                       : '${_lineItems.length} sản phẩm',
-                  style: TextStyle(color: cs.onSurfaceVariant, fontSize: context.sp(13)),
+                  style: TextStyle(
+                      color: cs.onSurfaceVariant, fontSize: context.sp(13)),
                 ),
               ),
               FilledButton.tonalIcon(
@@ -423,8 +433,10 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
                 icon: Icon(Icons.add_rounded, size: context.sp(18)),
                 label: Text('Thêm Sản Phẩm'),
                 style: FilledButton.styleFrom(
-                  padding: EdgeInsets.symmetric(horizontal: context.rw(14), vertical: context.rh(8)),
-                  textStyle: TextStyle(fontSize: context.sp(13), fontWeight: FontWeight.w600),
+                  padding: EdgeInsets.symmetric(
+                      horizontal: context.rw(14), vertical: context.rh(8)),
+                  textStyle: TextStyle(
+                      fontSize: context.sp(13), fontWeight: FontWeight.w600),
                 ),
               ),
             ],
@@ -656,7 +668,8 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
 
   Widget _buildSectionLabel(String title) {
     return Padding(
-      padding: EdgeInsets.fromLTRB(context.rw(20), context.rh(16), context.rw(16), context.rh(8)),
+      padding: EdgeInsets.fromLTRB(
+          context.rw(20), context.rh(16), context.rw(16), context.rh(8)),
       child: Text(
         title.toUpperCase(),
         style: Theme.of(context).textTheme.labelSmall?.copyWith(
@@ -751,10 +764,11 @@ class _LineItemRowState extends State<_LineItemRow> {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
-                if (item.product.categoryId != null)
+                if (item.product.category != null)
                   Text(
-                    item.product.categoryId!,
-                    style: TextStyle(fontSize: context.sp(11.5), color: cs.outline),
+                    item.product.category!,
+                    style: TextStyle(
+                        fontSize: context.sp(11.5), color: cs.outline),
                   ),
               ],
             ),
@@ -802,7 +816,8 @@ class _LineItemRowState extends State<_LineItemRow> {
           // Delete
           IconButton(
             onPressed: widget.onDelete,
-            icon: Icon(Icons.close_rounded, color: cs.error, size: context.sp(20)),
+            icon: Icon(Icons.close_rounded,
+                color: cs.error, size: context.sp(20)),
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(),
           ),
@@ -837,7 +852,7 @@ class _ProductPickerSheetState extends State<_ProductPickerSheet> {
   List<String> get _categories => [
         'Tất cả',
         ...widget.products
-            .map((p) => p.categoryId ?? '')
+            .map((p) => p.category ?? '')
             .where((c) => c.isNotEmpty)
             .toSet()
             .toList()
@@ -846,7 +861,7 @@ class _ProductPickerSheetState extends State<_ProductPickerSheet> {
 
   List<Product> get _filteredProducts => widget.products.where((p) {
         final matchCat =
-            _selectedCategory == 'Tất cả' || p.categoryId == _selectedCategory;
+            _selectedCategory == 'Tất cả' || p.category == _selectedCategory;
         final matchSearch = _searchText.isEmpty ||
             p.name.toLowerCase().contains(_searchText.toLowerCase());
         return matchCat && matchSearch;
@@ -880,13 +895,16 @@ class _ProductPickerSheetState extends State<_ProductPickerSheet> {
             ),
             // Header
             Padding(
-              padding: EdgeInsets.fromLTRB(context.rw(16), 0, context.rw(16), context.rh(8)),
+              padding: EdgeInsets.fromLTRB(
+                  context.rw(16), 0, context.rw(16), context.rh(8)),
               child: Row(
                 children: [
                   Expanded(
                     child: Text(
                       'Chọn Sản Phẩm',
-                      style: TextStyle(fontSize: context.sp(18), fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                          fontSize: context.sp(18),
+                          fontWeight: FontWeight.bold),
                     ),
                   ),
                   IconButton(
@@ -905,8 +923,8 @@ class _ProductPickerSheetState extends State<_ProductPickerSheet> {
                   prefixIcon: Icon(Icons.search_rounded, size: context.sp(20)),
                   border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(context.rr(12))),
-                  contentPadding:
-                      EdgeInsets.symmetric(horizontal: context.rw(12), vertical: context.rh(10)),
+                  contentPadding: EdgeInsets.symmetric(
+                      horizontal: context.rw(12), vertical: context.rh(10)),
                   isDense: true,
                 ),
                 onChanged: (v) => setState(() => _searchText = v),
@@ -924,7 +942,8 @@ class _ProductPickerSheetState extends State<_ProductPickerSheet> {
                 itemBuilder: (_, i) {
                   final cat = _categories[i];
                   return ChoiceChip(
-                    label: Text(cat, style: TextStyle(fontSize: context.sp(12))),
+                    label:
+                        Text(cat, style: TextStyle(fontSize: context.sp(12))),
                     selected: _selectedCategory == cat,
                     onSelected: (_) => setState(() => _selectedCategory = cat),
                     materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -966,13 +985,15 @@ class _ProductPickerSheetState extends State<_ProductPickerSheet> {
                             ),
                           ),
                           subtitle: Text(
-                            '${product.categoryId ?? 'Chưa phân loại'} · ${product.unit ?? ''}',
-                            style: TextStyle(fontSize: context.sp(11.5), color: cs.outline),
+                            '${product.category ?? 'Chưa phân loại'} · ${product.unit ?? ''}',
+                            style: TextStyle(
+                                fontSize: context.sp(11.5), color: cs.outline),
                           ),
                           trailing: isAdded
                               ? Chip(
                                   label: Text('Đã thêm',
-                                      style: TextStyle(fontSize: context.sp(11))),
+                                      style:
+                                          TextStyle(fontSize: context.sp(11))),
                                   padding: EdgeInsets.zero,
                                   visualDensity: VisualDensity.compact,
                                 )
@@ -990,7 +1011,8 @@ class _ProductPickerSheetState extends State<_ProductPickerSheet> {
                                     ),
                                     SizedBox(height: context.rh(2)),
                                     Icon(Icons.add_circle_rounded,
-                                        size: context.sp(20), color: Colors.green),
+                                        size: context.sp(20),
+                                        color: Colors.green),
                                   ],
                                 ),
                           onTap: isAdded

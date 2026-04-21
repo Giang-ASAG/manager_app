@@ -47,4 +47,14 @@ class SuppliersRepository {
       throw Exception("Failed to delete product: $e");
     }
   }
+
+  Future<Supplier> updateSupplier(int id, Supplier supplierData) async {
+    try {
+      final response =
+          await _api.dio.put('/suppliers/$id', data: supplierData.toJson());
+      return Supplier.fromJson(response.data);
+    } catch (e) {
+      throw Exception("Failed to update product: $e");
+    }
+  }
 }

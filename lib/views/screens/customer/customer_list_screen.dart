@@ -1,10 +1,9 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:manager/core/extensions/l10n_extension.dart';
 import 'package:manager/core/router/app_routes.dart';
 import 'package:manager/views/widgets/app_search_field.dart';
-import 'package:manager/views/widgets/app_snackbar.dart';
-import 'package:manager/views/widgets/custom_popup.dart';
 import 'package:manager/views/widgets/ios_action_sheet.dart';
 import 'package:provider/provider.dart';
 import 'package:manager/data/models/customer.dart';
@@ -67,7 +66,7 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
               physics: const BouncingScrollPhysics(),
               slivers: [
                 AppSliverAppBar(
-                  title: 'Khách hàng',
+                  title: context.l10n.customer,
                   showBackButton: true,
                   height: 150,
                   actions: [
@@ -83,7 +82,7 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
                   sliver: SliverList(
                     delegate: SliverChildListDelegate([
                       AppSummaryCard(
-                        label: "Tổng số khách hàng",
+                        label: context.l10n.customer_list,
                         value: "${filtered.length}",
                         icon: Icons.people_alt_outlined,
                         color: cs.primary,
@@ -112,7 +111,7 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
   Widget _buildCustomerCard(
       Customer customer, ColorScheme cs, ThemeData theme) {
     final bool isActive = customer.status.toLowerCase() == 'active';
-    final Color statusColor = isActive ? Colors.teal : cs.outline;
+    final Color statusColor = isActive ? Colors.teal : cs.error;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
@@ -134,33 +133,15 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
           context: context,
           name: customer.name,
           onDelete: () async {
-            // return context
-            //     .read<CategoriesViewModel>()
-            //     .deleteCategory(category.id);
-            return false;
+            return context.read<CustomerViewmodel>().deleteCustomer(customer.id);
           },
-          onEdit: () {},
-          onDetail: () {},
+          onEdit: () {
+            context.push(AppRoutes.customerEdit, extra: customer);
+          },
+          onDetail: () {
+            context.push(AppRoutes.customerDetail, extra: customer);
+          },
         ),
-        onLongPress: () {
-          showPopup(
-            context: context,
-            onCancelPressed: () {},
-            onOkPressed: () async {
-              final success = await context
-                  .read<CustomerViewmodel>()
-                  .deleteCustomer(customer.id);
-              if (success) {
-                AppSnackbar.showSuccess(context, "Xóa thành công");
-              } else {
-                AppSnackbar.showError(context, "Xóa thất bại");
-              }
-            },
-            type: AlertType.warning,
-            title: "Cảnh báo",
-            content: "Bạn có muốn xóa khách hàng này không?",
-          );
-        },
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -290,8 +271,7 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
                     _buildQuickAction(
                       icon: Icons.call_rounded,
                       color: Colors.green,
-                      onTap: () {
-                      },
+                      onTap: () {},
                     ),
                 ],
               ),

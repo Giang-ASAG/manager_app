@@ -6,7 +6,7 @@ class LanguageViewModel extends ChangeNotifier {
 
   Locale get locale => _locale;
 
-  static const _key = "language";
+  static const _key = "language_code";
 
   LanguageViewModel(String? initialCode)
       : _locale = Locale(initialCode ?? 'vi') { // Mặc định là 'vi' nếu null
@@ -29,7 +29,6 @@ class LanguageViewModel extends ChangeNotifier {
   Future<void> setLanguage(String code) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_key, code);
-
     _locale = Locale(code);
     notifyListeners();
   }

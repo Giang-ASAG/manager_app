@@ -5,14 +5,11 @@ import 'package:manager/core/extensions/l10n_extension.dart';
 import 'package:manager/core/router/app_routes.dart';
 import 'package:manager/data/models/category.dart';
 import 'package:manager/views/widgets/app_search_field.dart';
-import 'package:manager/views/widgets/app_snackbar.dart';
-import 'package:manager/views/widgets/custom_popup.dart';
 import 'package:manager/views/widgets/ios_action_sheet.dart';
 import 'package:provider/provider.dart';
 import 'package:manager/viewmodels/categories_viewmodel.dart';
 import 'package:manager/views/widgets/app_sliver_app_bar.dart';
 import 'package:manager/views/widgets/shared/app_add_button.dart';
-import 'package:rflutter_alert/rflutter_alert.dart';
 
 class CategoryListScreen extends StatefulWidget {
   const CategoryListScreen({super.key});

@@ -8,9 +8,12 @@ import 'package:manager/views/widgets/app_button.dart';
 import 'package:manager/views/widgets/app_sliver_app_bar.dart';
 import 'package:manager/views/widgets/app_snackbar.dart';
 import 'package:provider/provider.dart';
+import 'package:collection/collection.dart';
 
 class ProductFormScreen extends StatefulWidget {
-  const ProductFormScreen({super.key});
+  ProductFormScreen({super.key, this.product});
+
+  Product? product;
 
   @override
   State<ProductFormScreen> createState() => _ProductFormScreenState();
@@ -45,12 +48,46 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
 
   String? _selectedCategoryName;
 
+  bool get _isEditing => widget.product != null;
+
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<CategoriesViewModel>().fetchCategories();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await context
+          .read<CategoriesViewModel>()
+          .fetchCategories(); // await ở đây
+      if (_isEditing && mounted) {
+        final categories = context.read<CategoriesViewModel>().categories;
+        final match = categories.firstWhereOrNull(
+          (c) => c.name == widget.product!.category,
+        );
+        if (match != null) {
+          setState(() => _selectedCategoryName = match.name);
+        }
+      }
     });
+
+    if (_isEditing) {
+      final p = widget.product!;
+      _nameController.text = p.name;
+      _displayNameController.text = p.displayName ?? '';
+      _skuController.text = p.sku ?? '';
+      _specificationsController.text = p.specifications ?? '';
+      _thicknessController.text = p.thickness ?? '';
+      _weightController.text = p.weight != 0 ? p.weight.toString() : '';
+      _unitController.text = p.unit.isNotEmpty ? p.unit : 'Cái';
+      _packagingUnitController.text = p.packagingUnit ?? '';
+      _billableUnitController.text = p.billableUnit ?? '';
+      _unitsPerPackController.text =
+          p.unitsPerPack != 0 ? p.unitsPerPack.toString() : '';
+      _purchasePriceController.text =
+          p.purchasePrice != 0 ? p.purchasePrice.toString() : '';
+      _sellingPriceController.text =
+          p.sellingPrice != 0 ? p.sellingPrice.toString() : '';
+      _descriptionController.text = p.description ?? '';
+      // _selectedCategoryName = p.category;
+    }
   }
 
   @override
@@ -76,14 +113,14 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     if (_formKey.currentState!.validate()) {
       final productVM = context.read<ProductViewModel>();
 
-      final newProduct = Product(
-        id: 0,
+      final product = Product(
+        id: _isEditing ? widget.product!.id : 0,
         name: _nameController.text.trim(),
         displayName: _displayNameController.text.trim(),
-        categoryId: _selectedCategoryName,
+        category: _selectedCategoryName,
         sku: _skuController.text.trim(),
         specifications: _specificationsController.text.trim(),
-        thinkness: _thicknessController.text.trim(),
+        thickness: _thicknessController.text.trim(),
         weight: double.tryParse(_weightController.text) ?? 0.0,
         unit: _unitController.text.trim(),
         packagingUnit: _packagingUnitController.text.trim(),
@@ -95,14 +132,30 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
         status: 'Active',
       );
 
-      final success = await productVM.createProduct(newProduct);
+      final success = _isEditing
+          ? await productVM.updateProduct(widget.product!.id, product)
+          : await productVM.createProduct(product);
 
       if (mounted) {
         if (success) {
-          AppSnackbar.showSuccess(context, "Thêm sản phẩm thành công");
+          AppSnackbar.showSuccess(
+            context,
+            _isEditing
+                ? context.l10n.action_success(context.l10n.common_edit,
+                    context.l10n.product.toLowerCase())
+                : context.l10n.action_success(context.l10n.common_add,
+                    context.l10n.product.toLowerCase()),
+          );
           context.pop();
         } else {
-          AppSnackbar.showError(context, 'Lỗi: ${productVM.error}');
+          AppSnackbar.showError(
+            context,
+            _isEditing
+                ? context.l10n.action_failed(context.l10n.common_edit,
+                    context.l10n.product.toLowerCase())
+                : context.l10n.action_failed(context.l10n.common_add,
+                    context.l10n.product.toLowerCase()),
+          );
         }
       }
     }
@@ -119,7 +172,9 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
       body: CustomScrollView(
         slivers: [
           AppSliverAppBar(
-            title: context.l10n.product_add,
+            title: _isEditing
+                ? context.l10n.product_edit
+                : context.l10n.product_add,
             showBackButton: true,
             height: 80,
           ),
@@ -366,7 +421,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
             isExpanded: true,
             decoration: const InputDecoration(border: InputBorder.none),
             hint: Text(
-              "Chọn danh mục",
+              'Chọn danh mục',
               style: TextStyle(color: cs.onSurfaceVariant),
             ),
             items: vm.categories

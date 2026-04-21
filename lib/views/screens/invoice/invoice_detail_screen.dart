@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:manager/core/extensions/l10n_extension.dart';
 import 'package:manager/data/models/invoice.dart';
 import 'package:manager/viewmodels/invoice_viewmodel.dart';
 import 'package:manager/views/widgets/app_sliver_app_bar.dart';
@@ -71,8 +72,8 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
       backgroundColor: cs.surfaceContainerLowest,
       body: CustomScrollView(
         slivers: [
-          const AppSliverAppBar(
-            title: 'Chi tiết hóa đơn',
+          AppSliverAppBar(
+            title: context.l10n.invoice_detail,
             showBackButton: true,
             height: 80,
           ),
