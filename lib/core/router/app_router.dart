@@ -1,13 +1,16 @@
 // lib/router/app_router.dart
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:manager/data/models/branch.dart';
 import 'package:manager/data/models/customer.dart';
 import 'package:manager/data/models/product.dart';
 import 'package:manager/data/models/supplier.dart';
-import 'package:manager/data/repositories/manager_repository.dart';
 import 'package:manager/viewmodels/auth_viewmodel.dart';
 
 import 'package:manager/views/screens/auth/login_screen.dart';
+import 'package:manager/views/screens/branches/branches_list_screen.dart';
+import 'package:manager/views/screens/branches/branch_detail_screen.dart';
+import 'package:manager/views/screens/branches/branch_form_screen.dart';
 import 'package:manager/views/screens/categories/categories_form_screen.dart';
 import 'package:manager/views/screens/categories/categories_list_screen.dart';
 import 'package:manager/views/screens/customer/customer_detail_screen.dart';
@@ -167,6 +170,30 @@ class AppRouter {
           builder: (context, state) {
             final id = state.extra is int ? state.extra as int : 0;
             return InvoiceDetailScreen(id: id);
+          },
+        ),
+
+        // Branches Group
+        GoRoute(
+          path: AppRoutes.branches,
+          builder: (context, state) => const BranchesListScreen(),
+        ),
+        GoRoute(
+          path: AppRoutes.branchAdd,
+          builder: (context, state) => const BranchFormScreen(),
+        ),
+        GoRoute(
+          path: AppRoutes.branchEdit,
+          builder: (context, state) {
+            final branch = state.extra as Branch;
+            return BranchFormScreen(initialBranch: branch);
+          },
+        ),
+        GoRoute(
+          path: AppRoutes.branchDetail,
+          builder: (context, state) {
+            final branch = state.extra as Branch;
+            return BranchDetailScreen(branch: branch);
           },
         ),
       ],

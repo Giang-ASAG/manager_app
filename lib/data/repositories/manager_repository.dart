@@ -1,5 +1,6 @@
 import 'package:manager/core/services/api_service.dart';
 import 'package:manager/data/repositories/auth_repository.dart';
+import 'package:manager/data/repositories/branch_repository.dart';
 import 'package:manager/data/repositories/categories_repository.dart';
 import 'package:manager/data/repositories/customer_repository.dart';
 import 'package:manager/data/repositories/invoice_repository.dart';
@@ -15,6 +16,7 @@ class ManagerRepository {
   late final InvoiceRepository invoice;
   late final CustomerRepository customer;
   late final SuppliersRepository supplier;
+  late final BranchRepository branch;
 
   // Nhận ApiService từ Constructor
   ManagerRepository(this._apiService) {
@@ -25,5 +27,6 @@ class ManagerRepository {
     invoice = InvoiceRepository(_apiService);
     customer = CustomerRepository(_apiService);
     supplier = SuppliersRepository(_apiService);
+    branch = BranchRepository(_apiService);
   }
 }

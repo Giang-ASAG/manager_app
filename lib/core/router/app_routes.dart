@@ -27,4 +27,9 @@ class AppRoutes {
   static const supplierDetail = "/supplier/detail/:id";
   static const supplierEdit = "/supplier/edit/:id";
 
+  // Branches
+  static const branches = "/branches";
+  static const branchAdd = "/branches/add";
+  static const branchDetail = "/branches/detail/:id";
+  static const branchEdit = "/branches/edit/:id";
 }

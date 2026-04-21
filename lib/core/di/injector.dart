@@ -1,6 +1,6 @@
 import 'package:get_it/get_it.dart';
-import 'package:manager/data/repositories/invoice_repository.dart';
 import 'package:manager/data/repositories/manager_repository.dart';
+import 'package:manager/viewmodels/branch_viewmodel.dart';
 import 'package:manager/viewmodels/categories_viewmodel.dart';
 import 'package:manager/viewmodels/customer_viewmodel.dart';
 import 'package:manager/viewmodels/invoice_viewmodel.dart';
@@ -8,7 +8,6 @@ import 'package:manager/viewmodels/product_viewmodel.dart';
 import 'package:manager/viewmodels/supplier_viewmodel.dart';
 
 import '../services/api_service.dart';
-import '../../data/repositories/auth_repository.dart';
 import '../../viewmodels/auth_viewmodel.dart';
 
 final getIt = GetIt.instance;
@@ -51,5 +50,8 @@ void setupLocator() {
   );
   getIt.registerFactory<SupplierViewmodel>(
     () => SupplierViewmodel(getIt<ManagerRepository>().supplier),
+  );
+  getIt.registerFactory<BranchViewModel>(
+    () => BranchViewModel(getIt<ManagerRepository>().branch),
   );
 }

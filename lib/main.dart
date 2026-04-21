@@ -4,9 +4,9 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:go_router/go_router.dart';
 import 'package:manager/core/di/injector.dart';
 import 'package:manager/core/router/app_router.dart';
-import 'package:manager/data/repositories/product_repository.dart';
 import 'package:manager/l10n/app_localizations.dart';
 import 'package:manager/viewmodels/auth_viewmodel.dart';
+import 'package:manager/viewmodels/branch_viewmodel.dart';
 import 'package:manager/viewmodels/categories_viewmodel.dart';
 import 'package:manager/viewmodels/customer_viewmodel.dart';
 import 'package:manager/viewmodels/dashboard_viewmodel.dart';
@@ -83,6 +83,9 @@ class MyApp extends StatelessWidget {
         ),
         ChangeNotifierProvider(
           create: (_) => getIt<SupplierViewmodel>(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => getIt<BranchViewModel>(),
         ),
       ],
       child: const RootApp(),

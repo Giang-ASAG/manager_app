@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:manager/core/extensions/l10n_extension.dart';
 import 'package:manager/core/utils/app_responsive.dart';
-import 'package:manager/views/widgets/app_actions.dart';
 import 'package:manager/views/widgets/app_sliver_app_bar.dart';
 import 'package:provider/provider.dart';
 import 'package:manager/viewmodels/dashboard_viewmodel.dart';
@@ -108,6 +107,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
           const Color(0xFFE07B1A), '/purchases'),
       _ActionItem('Quản lý kho', Icons.warehouse_rounded,
           const Color(0xFF0FA37A), '/inventory'),
+      _ActionItem('Quản chi nhánh', Icons.branding_watermark_rounded,
+          const Color(0xFF0FA37A), '/branches'),
       _ActionItem('Công nợ', Icons.account_balance_wallet_rounded,
           const Color(0xFF7C3AED), '/debt'),
       _ActionItem(context.l10n.product, Icons.category_rounded,
