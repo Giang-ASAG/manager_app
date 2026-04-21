@@ -30,16 +30,14 @@ class InvoiceViewmodel extends ChangeNotifier {
 
   Future<void> fetchInvoicebyId(int id) async {
     // Thêm dấu ? vì có thể trả về null khi lỗi
-
+    isLoading = true;
+    notifyListeners();
     try {
-      isLoading = true;
-      error = null;
-      notifyListeners();
       // Gọi repository để lấy dữ liệu
       final invoice = await _repo.getInvoicebyId(id);
       invoiceDta = invoice;
     } catch (e) {
-      error = e.toString();
+      invoiceDta = null;
       debugPrint("Error fetching invoice detail: $e");
     } finally {
       isLoading = false;

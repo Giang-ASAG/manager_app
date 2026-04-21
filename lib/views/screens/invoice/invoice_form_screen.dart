@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+import 'package:manager/core/utils/app_responsive.dart';
 import 'package:manager/data/models/customer.dart';
 import 'package:manager/data/models/invoice.dart';
 import 'package:manager/data/models/invoice_item.dart';
@@ -245,7 +246,7 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
       ),
       bottomSheet: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 30),
+          padding: EdgeInsets.fromLTRB(context.rw(16), context.rh(12), context.rw(16), context.rh(30)),
           child: AppButton(
             text: "Lưu hóa đơn",
             isLoading: productVM.isLoading,
@@ -267,23 +268,23 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
             label: 'Số Hóa Đơn',
             child: Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+              padding: EdgeInsets.symmetric(horizontal: context.rw(12), vertical: context.rh(12)),
               decoration: BoxDecoration(
                 color: cs.surfaceContainerHighest.withOpacity(0.6),
                 border: Border.all(color: cs.outlineVariant),
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(context.rr(10)),
               ),
               child: Text(
                 'INV0-00000${invoices.length + 1}',
                 style: TextStyle(
-                  fontSize: 14,
+                  fontSize: context.sp(14),
                   fontWeight: FontWeight.w500,
                   color: cs.onSurfaceVariant,
                 ),
               ),
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: context.rh(16)),
           Row(
             children: [
               Expanded(
@@ -341,14 +342,14 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
                   'Thêm mới',
                   style: TextStyle(
                     color: cs.primary,
-                    fontSize: 12,
+                    fontSize: context.sp(12),
                     fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: context.rh(8)),
           _StyledDropdown<Customer?>(
             value: _selectedCustomer,
             items: [null, ...customers],
@@ -357,7 +358,7 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
             onChanged: _onCustomerSelected,
             cs: cs,
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: context.rh(16)),
           Row(
             children: [
               Expanded(
@@ -372,7 +373,7 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: context.rw(12)),
               Expanded(
                 child: _LabeledField(
                   label: 'Điện Thoại',
@@ -386,7 +387,7 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: context.rh(12)),
           _LabeledField(
             label: 'Địa Chỉ',
             child: _StyledTextFormField(
@@ -414,18 +415,16 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
                   _lineItems.isEmpty
                       ? 'Chưa có sản phẩm'
                       : '${_lineItems.length} sản phẩm',
-                  style: TextStyle(color: cs.onSurfaceVariant, fontSize: 13),
+                  style: TextStyle(color: cs.onSurfaceVariant, fontSize: context.sp(13)),
                 ),
               ),
               FilledButton.tonalIcon(
                 onPressed: () => _showProductPicker(products, alreadyAddedIds),
-                icon: const Icon(Icons.add_rounded, size: 18),
-                label: const Text('Thêm Sản Phẩm'),
+                icon: Icon(Icons.add_rounded, size: context.sp(18)),
+                label: Text('Thêm Sản Phẩm'),
                 style: FilledButton.styleFrom(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                  textStyle: const TextStyle(
-                      fontSize: 13, fontWeight: FontWeight.w600),
+                  padding: EdgeInsets.symmetric(horizontal: context.rw(14), vertical: context.rh(8)),
+                  textStyle: TextStyle(fontSize: context.sp(13), fontWeight: FontWeight.w600),
                 ),
               ),
             ],
@@ -562,13 +561,13 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: context.rh(20)),
           // Summary box
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(context.rw(16)),
             decoration: BoxDecoration(
               color: cs.surfaceContainerHighest.withOpacity(0.4),
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(context.rr(16)),
             ),
             child: Column(
               children: [
@@ -657,12 +656,13 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
 
   Widget _buildSectionLabel(String title) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 16, 8),
+      padding: EdgeInsets.fromLTRB(context.rw(20), context.rh(16), context.rw(16), context.rh(8)),
       child: Text(
         title.toUpperCase(),
         style: Theme.of(context).textTheme.labelSmall?.copyWith(
               fontWeight: FontWeight.bold,
               letterSpacing: 1.1,
+              fontSize: context.sp(11),
               color: Theme.of(context).colorScheme.outline,
             ),
       ),
@@ -730,11 +730,11 @@ class _LineItemRowState extends State<_LineItemRow> {
     final cs = widget.cs;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
+      margin: EdgeInsets.only(bottom: context.rh(8)),
+      padding: EdgeInsets.all(context.rw(12)),
       decoration: BoxDecoration(
         border: Border.all(color: cs.outlineVariant.withOpacity(0.6)),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(context.rr(12)),
       ),
       child: Row(
         children: [
@@ -746,20 +746,20 @@ class _LineItemRowState extends State<_LineItemRow> {
               children: [
                 Text(
                   item.product.name,
-                  style: const TextStyle(
-                      fontWeight: FontWeight.w600, fontSize: 13.5),
+                  style: TextStyle(
+                      fontWeight: FontWeight.w600, fontSize: context.sp(13.5)),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
                 if (item.product.categoryId != null)
                   Text(
                     item.product.categoryId!,
-                    style: TextStyle(fontSize: 11.5, color: cs.outline),
+                    style: TextStyle(fontSize: context.sp(11.5), color: cs.outline),
                   ),
               ],
             ),
           ),
-          const SizedBox(width: 12),
+          SizedBox(width: context.rw(12)),
           // Qty + Price inputs
           Expanded(
             flex: 3,
@@ -773,7 +773,7 @@ class _LineItemRowState extends State<_LineItemRow> {
                   onChanged: (v) =>
                       widget.onQtyChanged(double.tryParse(v) ?? 1),
                 ),
-                const SizedBox(height: 6),
+                SizedBox(height: context.rh(6)),
                 _MiniNumberField(
                   controller: _priceCtrl,
                   hint: 'Đơn giá',
@@ -785,7 +785,7 @@ class _LineItemRowState extends State<_LineItemRow> {
               ],
             ),
           ),
-          const SizedBox(width: 12),
+          SizedBox(width: context.rw(12)),
           // Line total
           Expanded(
             flex: 2,
@@ -795,14 +795,14 @@ class _LineItemRowState extends State<_LineItemRow> {
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 color: cs.primary,
-                fontSize: 13.5,
+                fontSize: context.sp(13.5),
               ),
             ),
           ),
           // Delete
           IconButton(
             onPressed: widget.onDelete,
-            icon: Icon(Icons.close_rounded, color: cs.error, size: 20),
+            icon: Icon(Icons.close_rounded, color: cs.error, size: context.sp(20)),
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(),
           ),
@@ -870,24 +870,23 @@ class _ProductPickerSheetState extends State<_ProductPickerSheet> {
           children: [
             // Handle
             Container(
-              margin: const EdgeInsets.symmetric(vertical: 12),
-              width: 40,
-              height: 4,
+              margin: EdgeInsets.symmetric(vertical: context.rh(12)),
+              width: context.rw(40),
+              height: context.rh(4),
               decoration: BoxDecoration(
                 color: cs.outlineVariant,
-                borderRadius: BorderRadius.circular(2),
+                borderRadius: BorderRadius.circular(context.rr(2)),
               ),
             ),
             // Header
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              padding: EdgeInsets.fromLTRB(context.rw(16), 0, context.rw(16), context.rh(8)),
               child: Row(
                 children: [
-                  const Expanded(
+                  Expanded(
                     child: Text(
                       'Chọn Sản Phẩm',
-                      style:
-                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      style: TextStyle(fontSize: context.sp(18), fontWeight: FontWeight.bold),
                     ),
                   ),
                   IconButton(
@@ -903,29 +902,29 @@ class _ProductPickerSheetState extends State<_ProductPickerSheet> {
               child: TextField(
                 decoration: InputDecoration(
                   hintText: 'Tìm sản phẩm...',
-                  prefixIcon: const Icon(Icons.search_rounded, size: 20),
+                  prefixIcon: Icon(Icons.search_rounded, size: context.sp(20)),
                   border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12)),
+                      borderRadius: BorderRadius.circular(context.rr(12))),
                   contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      EdgeInsets.symmetric(horizontal: context.rw(12), vertical: context.rh(10)),
                   isDense: true,
                 ),
                 onChanged: (v) => setState(() => _searchText = v),
               ),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: context.rh(12)),
             // Category chips
             SizedBox(
-              height: 38,
+              height: context.rh(38),
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                padding: EdgeInsets.symmetric(horizontal: context.rw(16)),
                 itemCount: _categories.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 8),
+                separatorBuilder: (_, __) => SizedBox(width: context.rw(8)),
                 itemBuilder: (_, i) {
                   final cat = _categories[i];
                   return ChoiceChip(
-                    label: Text(cat, style: const TextStyle(fontSize: 12)),
+                    label: Text(cat, style: TextStyle(fontSize: context.sp(12))),
                     selected: _selectedCategory == cat,
                     onSelected: (_) => setState(() => _selectedCategory = cat),
                     materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -933,7 +932,7 @@ class _ProductPickerSheetState extends State<_ProductPickerSheet> {
                 },
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: context.rh(8)),
             const Divider(height: 1),
             // Product list
             Expanded(
@@ -962,18 +961,18 @@ class _ProductPickerSheetState extends State<_ProductPickerSheet> {
                             product.name,
                             style: TextStyle(
                               fontWeight: FontWeight.w600,
-                              fontSize: 13,
+                              fontSize: context.sp(13),
                               color: isAdded ? cs.outline : cs.onSurface,
                             ),
                           ),
                           subtitle: Text(
                             '${product.categoryId ?? 'Chưa phân loại'} · ${product.unit ?? ''}',
-                            style: TextStyle(fontSize: 11.5, color: cs.outline),
+                            style: TextStyle(fontSize: context.sp(11.5), color: cs.outline),
                           ),
                           trailing: isAdded
-                              ? const Chip(
+                              ? Chip(
                                   label: Text('Đã thêm',
-                                      style: TextStyle(fontSize: 11)),
+                                      style: TextStyle(fontSize: context.sp(11))),
                                   padding: EdgeInsets.zero,
                                   visualDensity: VisualDensity.compact,
                                 )
@@ -984,14 +983,14 @@ class _ProductPickerSheetState extends State<_ProductPickerSheet> {
                                     Text(
                                       '${currency.format(product.purchasePrice)} đ',
                                       style: TextStyle(
-                                        fontSize: 13,
+                                        fontSize: context.sp(13),
                                         fontWeight: FontWeight.bold,
                                         color: cs.primary,
                                       ),
                                     ),
-                                    const SizedBox(height: 2),
-                                    const Icon(Icons.add_circle_rounded,
-                                        size: 20, color: Colors.green),
+                                    SizedBox(height: context.rh(2)),
+                                    Icon(Icons.add_circle_rounded,
+                                        size: context.sp(20), color: Colors.green),
                                   ],
                                 ),
                           onTap: isAdded

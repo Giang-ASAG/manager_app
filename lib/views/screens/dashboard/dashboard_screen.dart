@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:manager/core/extensions/l10n_extension.dart';
+import 'package:manager/core/utils/app_responsive.dart';
 import 'package:manager/views/widgets/app_actions.dart';
 import 'package:manager/views/widgets/app_sliver_app_bar.dart';
 import 'package:provider/provider.dart';
@@ -40,7 +41,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
             showBackButton: false,
             height: 80,
             actions: [
-              AppActions(),
               const SizedBox(width: 8),
               CircleAvatar(
                 radius: 16,
@@ -91,7 +91,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Text(
       title,
       style: TextStyle(
-        fontSize: 15,
+        fontSize: context.sp(15),
         fontWeight: FontWeight.w700,
         color: Theme.of(context).colorScheme.onSurface,
         letterSpacing: 0.1,
@@ -123,10 +123,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 4,
-        crossAxisSpacing: 10,
-        mainAxisSpacing: 10,
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: AppResponsive.of(context).adaptiveCrossAxisCount(
+          phone: 4,
+          tablet: 6,
+        ),
+        crossAxisSpacing: context.rw(10),
+        mainAxisSpacing: context.rh(10),
         childAspectRatio: 0.82,
       ),
       itemCount: actions.length,
@@ -154,38 +157,38 @@ class _QuickActionTile extends StatelessWidget {
       curve: Curves.easeOut,
       child: Material(
         color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(context.rr(16)),
         child: InkWell(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(context.rr(16)),
           onTap: () => context.push(item.route),
           splashColor: item.iconColor.withOpacity(0.15),
           highlightColor: item.iconColor.withOpacity(0.08),
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12),
+            padding: EdgeInsets.symmetric(vertical: context.rh(12)),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Container(
-                  width: 44,
-                  height: 44,
+                  width: context.rw(44),
+                  height: context.rw(44),
                   decoration: BoxDecoration(
                     color: item.iconColor.withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(13),
+                    borderRadius: BorderRadius.circular(context.rr(13)),
                   ),
                   child: Icon(
                     item.icon,
                     color: item.iconColor,
-                    size: 22,
+                    size: context.sp(22),
                   ),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: context.rh(8)),
                 Text(
                   item.label,
                   textAlign: TextAlign.center,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontSize: 11,
+                    fontSize: context.sp(11),
                     fontWeight: FontWeight.w600,
                     color: Theme.of(context).colorScheme.onSurface,
                     height: 1.25,

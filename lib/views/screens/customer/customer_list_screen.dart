@@ -1,17 +1,18 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:manager/core/router/app_routes.dart';
 import 'package:manager/views/widgets/app_search_field.dart';
 import 'package:manager/views/widgets/app_snackbar.dart';
 import 'package:manager/views/widgets/custom_popup.dart';
+import 'package:manager/views/widgets/ios_action_sheet.dart';
 import 'package:provider/provider.dart';
-import 'package:go_router/go_router.dart';
 import 'package:manager/data/models/customer.dart';
 import 'package:manager/viewmodels/customer_viewmodel.dart';
 import 'package:manager/views/widgets/app_sliver_app_bar.dart';
 import 'package:manager/views/widgets/shared/app_summary_card.dart';
 import 'package:manager/views/widgets/shared/app_add_button.dart';
 import 'package:rflutter_alert/rflutter_alert.dart';
-import 'package:flutter/cupertino.dart';
 
 class CustomerListScreen extends StatefulWidget {
   const CustomerListScreen({super.key});
@@ -26,7 +27,6 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
   @override
   void initState() {
     super.initState();
-    // Gọi API lấy danh sách khách hàng khi vào trang
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<CustomerViewmodel>().fetchCustomers();
     });
@@ -44,72 +44,69 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
 
-    return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      body: Consumer<CustomerViewmodel>(
-        builder: (_, vm, __) {
-          if (vm.isLoading && vm.customers.isEmpty) {
-            return const Center(child: CircularProgressIndicator());
-          }
+    return GestureDetector(
+      onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+      child: Scaffold(
+        backgroundColor: theme.scaffoldBackgroundColor,
+        body: Consumer<CustomerViewmodel>(
+          builder: (_, vm, __) {
+            if (vm.isLoading && vm.customers.isEmpty) {
+              return const Center(child: CircularProgressIndicator());
+            }
 
-          final query = searchController.text.trim().toLowerCase();
-          final filtered = query.isEmpty
-              ? vm.customers
-              : vm.customers.where((c) {
-            return c.name.toLowerCase().contains(query) ||
-                (c.phone?.contains(query) ?? false) ||
-                (c.email?.toLowerCase().contains(query) ?? false);
-          }).toList();
+            final query = searchController.text.trim().toLowerCase();
+            final filtered = query.isEmpty
+                ? vm.customers
+                : vm.customers.where((c) {
+                    return c.name.toLowerCase().contains(query) ||
+                        (c.phone?.contains(query) ?? false) ||
+                        (c.email?.toLowerCase().contains(query) ?? false);
+                  }).toList();
 
-          return CustomScrollView(
-            physics: const BouncingScrollPhysics(),   // Quan trọng cho Cupertino refresh mượt
-            slivers: [
-              // ==================== HEADER (Pinned) ====================
-              AppSliverAppBar(
-                title: 'Khách hàng',
-                showBackButton: true,
-                height: 150,
-                actions: [
-                  AppAddButton(
-                    onPressed: () => context.push(AppRoutes.customerAdd),
-                  ),
-                ],
-                bottom: AppSearchField(controller: searchController),
-              ),
-
-              // ==================== PULL TO REFRESH (iOS Style) ====================
-              CupertinoSliverRefreshControl(
-                onRefresh: () async {
-                  await context.read<CustomerViewmodel>().fetchCustomers();
-                },
-              ),
-
-              // ==================== CONTENT ====================
-              SliverPadding(
-                padding: const EdgeInsets.fromLTRB(16, 24, 16, 80),
-                sliver: SliverList(
-                  delegate: SliverChildListDelegate([
-                    // Thống kê nhanh
-                    AppSummaryCard(
-                      label: "Tổng số khách hàng",
-                      value: "${filtered.length}",
-                      icon: Icons.people_alt_outlined,
-                      color: cs.primary,
+            return CustomScrollView(
+              physics: const BouncingScrollPhysics(),
+              slivers: [
+                AppSliverAppBar(
+                  title: 'Khách hàng',
+                  showBackButton: true,
+                  height: 150,
+                  actions: [
+                    AppAddButton(
+                      onPressed: () => context.push(AppRoutes.customerAdd),
                     ),
-                    const SizedBox(height: 10),
-
-                    if (filtered.isEmpty)
-                      _buildEmptyState()
-                    else
-                      ...filtered.map((c) => _buildCustomerCard(c, cs, theme)),
-                  ]),
+                  ],
+                  bottom: AppSearchField(controller: searchController),
                 ),
-              ),
-            ],
-          );
-        },
+                CupertinoSliverRefreshControl(onRefresh: _onRefresh),
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(16, 24, 16, 80),
+                  sliver: SliverList(
+                    delegate: SliverChildListDelegate([
+                      AppSummaryCard(
+                        label: "Tổng số khách hàng",
+                        value: "${filtered.length}",
+                        icon: Icons.people_alt_outlined,
+                        color: cs.primary,
+                      ),
+                      const SizedBox(height: 10),
+                      if (filtered.isEmpty)
+                        _buildEmptyState()
+                      else
+                        ...filtered
+                            .map((c) => _buildCustomerCard(c, cs, theme)),
+                    ]),
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
       ),
     );
+  }
+
+  Future<void> _onRefresh() async {
+    await context.read<CustomerViewmodel>().fetchCustomers();
   }
 
   Widget _buildCustomerCard(
@@ -121,7 +118,7 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
       margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
         color: cs.surface,
-        borderRadius: BorderRadius.circular(24), // Bo góc sâu kiểu hiện đại
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(color: cs.outlineVariant.withOpacity(0.3)),
         boxShadow: [
           BoxShadow(
@@ -133,25 +130,36 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(24),
-        onTap: () => context.push('/customers/detail', extra: customer),
+        onTap: () => showIosActionSheet(
+          context: context,
+          name: customer.name,
+          onDelete: () async {
+            // return context
+            //     .read<CategoriesViewModel>()
+            //     .deleteCategory(category.id);
+            return false;
+          },
+          onEdit: () {},
+          onDetail: () {},
+        ),
         onLongPress: () {
           showPopup(
-              context: context,
-              onCancelPressed: () {},
-              onOkPressed: () async {
-                final success = await context
-                    .read<CustomerViewmodel>()
-                    .deleteCustomer(customer.id);
-                if (success) {
-                  AppSnackbar.showSuccess(context, "Xóa thành công");
-                } else {
-                  AppSnackbar.showError(
-                      context, "Xóa thất bại");
-                }
-              },
-              type: AlertType.warning,
-              title: "Cảnh báo",
-              content: "Bạn có muốn xóa khách hàng này không?");
+            context: context,
+            onCancelPressed: () {},
+            onOkPressed: () async {
+              final success = await context
+                  .read<CustomerViewmodel>()
+                  .deleteCustomer(customer.id);
+              if (success) {
+                AppSnackbar.showSuccess(context, "Xóa thành công");
+              } else {
+                AppSnackbar.showError(context, "Xóa thất bại");
+              }
+            },
+            type: AlertType.warning,
+            title: "Cảnh báo",
+            content: "Bạn có muốn xóa khách hàng này không?",
+          );
         },
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -160,7 +168,6 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // 1. Avatar với chữ cái đầu và Badge trạng thái
                   Stack(
                     children: [
                       Container(
@@ -203,8 +210,6 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
                     ],
                   ),
                   const SizedBox(width: 16),
-
-                  // 2. Thông tin chính (Tên & Badge)
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -223,7 +228,6 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
-                            // Status Label nhỏ gọn
                             Container(
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 8, vertical: 2),
@@ -262,15 +266,11 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
                   ),
                 ],
               ),
-
-              // Dấu gạch ngang nhẹ giữa card
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 child: Divider(
                     height: 1, color: cs.outlineVariant.withOpacity(0.5)),
               ),
-
-              // 3. Địa chỉ và các nút thao tác nhanh
               Row(
                 children: [
                   Icon(Icons.location_on_rounded, size: 16, color: cs.outline),
@@ -286,13 +286,11 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  // Nút gọi điện nhanh
                   if (customer.phone != null)
                     _buildQuickAction(
                       icon: Icons.call_rounded,
                       color: Colors.green,
                       onTap: () {
-                        /* Thêm logic url_launcher gọi điện */
                       },
                     ),
                 ],
@@ -304,11 +302,11 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
     );
   }
 
-// Helper xây dựng nút action nhỏ bên phải
-  Widget _buildQuickAction(
-      {required IconData icon,
-      required Color color,
-      required VoidCallback onTap}) {
+  Widget _buildQuickAction({
+    required IconData icon,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
     return Material(
       color: color.withOpacity(0.1),
       borderRadius: BorderRadius.circular(10),

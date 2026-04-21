@@ -17,28 +17,55 @@ class InvoiceDetailScreen extends StatefulWidget {
 class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
   final currencyFormat = NumberFormat('#,##0', 'vi_VN');
 
+  bool _hasMinimumLoadingTimePassed = false;
+
   @override
   void initState() {
     super.initState();
+    // Bắt đầu đếm 2 giây loading tối thiểu
+    Future.delayed(const Duration(seconds: 1), () {
+      if (mounted) {
+        setState(() {
+          _hasMinimumLoadingTimePassed = true;
+        });
+      }
+    });
+
+    // Gọi API ngay
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<InvoiceViewmodel>().fetchInvoicebyId(widget.id);
     });
   }
 
   @override
+  void dispose() {
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
+    final vm = context.watch<InvoiceViewmodel>();
+    final invoiceData = vm.invoiceDta;
 
-    final invoiceData = context.watch<InvoiceViewmodel>().invoiceDta;
+    final shouldShowLoading =
+        !_hasMinimumLoadingTimePassed || invoiceData == null;
 
-    // 👉 Loading / null
-    if (invoiceData == null) {
+    if (shouldShowLoading) {
       return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(),
+            ],
+          ),
+        ),
       );
     }
+
+    // ── Dữ liệu đã sẵn sàng + đủ 2 giây ──
+    final cs = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
       backgroundColor: cs.surfaceContainerLowest,
@@ -86,10 +113,10 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
                       ),
                       const SizedBox(height: 12),
                       _buildInfoRow(Icons.phone_android_rounded,
-                          invoiceData.customerName, cs),
+                          invoiceData.customerPhone ?? '', cs),
                       const SizedBox(height: 4),
                       _buildInfoRow(Icons.location_on_rounded,
-                          invoiceData.customerAddress!, cs),
+                          invoiceData.customerAddress ?? '', cs),
                       const SizedBox(height: 20),
                       _buildPriceSummary(context, currencyFormat, invoiceData),
                     ],
@@ -109,7 +136,7 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(p.method),
-                                Text("Ref: ${p.reference}"),
+                                Text("Ref: ${p.reference ?? 'Không có'}"),
                               ],
                             ),
                           ),
@@ -128,9 +155,7 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
-                          // Giúp text lệch phía trên khi bị xuống dòng
                           children: [
-                            // 1. Tên sản phẩm & Chi tiết số lượng
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -146,7 +171,7 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
-                                    "${item.qty} ${item.unit}  ×  ${currencyFormat.format(item.unitPrice)} đ",
+                                    "${item.qty} ${item.unit} × ${currencyFormat.format(item.unitPrice ?? 0)} đ",
                                     style: textTheme.bodySmall?.copyWith(
                                       color: cs.outline,
                                       letterSpacing: 0.2,
@@ -155,17 +180,12 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
                                 ],
                               ),
                             ),
-
                             const SizedBox(width: 16),
-                            // Khoảng cách an toàn giữa tên và giá
-
-                            // 2. Thành tiền
                             Text(
-                              "${currencyFormat.format(item.lineTotal)} đ",
+                              "${currencyFormat.format(item.lineTotal ?? 0)} đ",
                               style: textTheme.titleMedium?.copyWith(
                                 fontWeight: FontWeight.bold,
-                                color: cs
-                                    .primary, // Làm nổi bật số tiền cần thanh toán
+                                color: cs.primary,
                               ),
                             ),
                           ],

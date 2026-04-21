@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:manager/core/utils/app_responsive.dart';
 import 'package:manager/data/models/category.dart';
 import 'package:manager/viewmodels/categories_viewmodel.dart';
 import 'package:manager/views/widgets/app_button.dart';
@@ -71,7 +72,7 @@ class _CategoriesFormScreenState extends State<CategoriesFormScreen> {
             height: 100,
           ),
           SliverPadding(
-            padding: const EdgeInsets.fromLTRB(16, 24, 16, 120),
+            padding: EdgeInsets.fromLTRB(context.rw(16), context.rh(24), context.rw(16), context.rh(120)),
             sliver: SliverToBoxAdapter(
               child: Form(
                 key: _formKey,
@@ -89,7 +90,7 @@ class _CategoriesFormScreenState extends State<CategoriesFormScreen> {
                       validator: (v) => v!.isEmpty ? 'Tên không được để trống' : null,
                     ),
 
-                    const SizedBox(height: 20),
+                    SizedBox(height: context.rh(20)),
 
                     _buildTextField(
                       context,
@@ -100,18 +101,18 @@ class _CategoriesFormScreenState extends State<CategoriesFormScreen> {
                       maxLines: 3,
                     ),
 
-                    const SizedBox(height: 24),
+                    SizedBox(height: context.rh(24)),
 
                     // ── Trạng thái (Active/Inactive) ──────────────────
                     _buildSectionTitle(context, "Cài đặt hiển thị"),
                     Container(
-                      padding: const EdgeInsets.all(12),
+                      padding: EdgeInsets.all(context.rw(12)),
                       decoration: _fieldDecoration(context),
                       child: Row(
                         children: [
                           Icon(_isActive ? Icons.visibility_rounded : Icons.visibility_off_rounded,
                               color: _isActive ? cs.primary : cs.error),
-                          const SizedBox(width: 12),
+                          SizedBox(width: context.rw(12)),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -120,12 +121,15 @@ class _CategoriesFormScreenState extends State<CategoriesFormScreen> {
                                   _isActive ? "Đang hoạt động" : "Ngừng hoạt động",
                                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                                     fontWeight: FontWeight.bold,
+                                    fontSize: context.sp(14),
                                     color: _isActive ? cs.primary : cs.error,
                                   ),
                                 ),
                                 Text(
                                   "Trạng thái danh mục trên hệ thống",
-                                  style: Theme.of(context).textTheme.bodySmall,
+                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    fontSize: context.sp(12),
+                                  ),
                                 ),
                               ],
                             ),
@@ -139,7 +143,7 @@ class _CategoriesFormScreenState extends State<CategoriesFormScreen> {
                       ),
                     ),
 
-                    const SizedBox(height: 16),
+                    SizedBox(height: context.rh(16)),
 
                     Text(
                       "Ngày tạo: ${DateFormat('dd/MM/yyyy').format(DateTime.now())}",
@@ -157,7 +161,7 @@ class _CategoriesFormScreenState extends State<CategoriesFormScreen> {
       ),
       bottomSheet: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 30),
+          padding: EdgeInsets.fromLTRB(context.rw(16), context.rh(12), context.rw(16), context.rh(30)),
           child: AppButton(
             text: "Lưu danh mục",
             isLoading: categoryVM.isLoading,
@@ -172,11 +176,12 @@ class _CategoriesFormScreenState extends State<CategoriesFormScreen> {
 
   Widget _buildSectionTitle(BuildContext context, String title) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12, left: 4),
+      padding: EdgeInsets.only(bottom: context.rh(12), left: context.rw(4)),
       child: Text(
         title.toUpperCase(),
         style: Theme.of(context).textTheme.labelMedium?.copyWith(
           fontWeight: FontWeight.w600,
+          fontSize: context.sp(12),
           letterSpacing: 0.8,
           color: Theme.of(context).colorScheme.onSurfaceVariant,
         ),
@@ -199,9 +204,12 @@ class _CategoriesFormScreenState extends State<CategoriesFormScreen> {
       children: [
         Text(
           label,
-          style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.w600,
+            fontSize: context.sp(14),
+          ),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: context.rh(8)),
         Container(
           decoration: _fieldDecoration(context),
           child: TextFormField(
@@ -211,9 +219,12 @@ class _CategoriesFormScreenState extends State<CategoriesFormScreen> {
             decoration: InputDecoration(
               hintText: hint,
               hintStyle: TextStyle(color: cs.onSurfaceVariant, fontWeight: FontWeight.normal),
-              prefixIcon: Icon(icon, color: cs.primary, size: 20),
+              prefixIcon: Icon(icon, color: cs.primary, size: context.sp(20)),
               border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: context.rw(16),
+                vertical: context.rh(14),
+              ),
             ),
           ),
         ),

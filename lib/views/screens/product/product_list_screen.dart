@@ -1,18 +1,19 @@
-import 'package:flutter/cupertino.dart'; // ← Thêm import này
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:manager/core/extensions/l10n_extension.dart';
 import 'package:manager/core/router/app_routes.dart';
+import 'package:manager/core/utils/app_responsive.dart';
 import 'package:manager/data/models/product.dart';
 import 'package:manager/viewmodels/product_viewmodel.dart';
 import 'package:manager/views/widgets/app_search_field.dart';
 import 'package:manager/views/widgets/app_sliver_app_bar.dart';
 import 'package:manager/views/widgets/app_snackbar.dart';
 import 'package:manager/views/widgets/custom_popup.dart';
+import 'package:manager/views/widgets/ios_action_sheet.dart'; // ← Giả sử bạn có file này
 import 'package:manager/views/widgets/shared/app_add_button.dart';
 import 'package:provider/provider.dart';
-import 'package:rflutter_alert/rflutter_alert.dart';
 
 class ProductListScreen extends StatefulWidget {
   const ProductListScreen({super.key});
@@ -45,277 +46,233 @@ class _ProductListScreenState extends State<ProductListScreen> {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
 
-    return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      body: Consumer<ProductViewModel>(
-        builder: (_, vm, __) {
-          if (vm.isLoading && vm.products.isEmpty) {
-            return const Center(child: CircularProgressIndicator());
-          }
+    return GestureDetector(
+      onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+      child: Scaffold(
+        backgroundColor: theme.scaffoldBackgroundColor,
+        body: Consumer<ProductViewModel>(
+          builder: (_, vm, __) {
+            if (vm.isLoading && vm.products.isEmpty) {
+              return const Center(child: CircularProgressIndicator());
+            }
 
-          final query = searchController.text.trim().toLowerCase();
-          final filteredProducts = query.isEmpty
-              ? vm.products
-              : vm.products
-                  .where((p) => p.name.toLowerCase().contains(query))
-                  .toList();
+            final query = searchController.text.trim().toLowerCase();
+            final filteredProducts = query.isEmpty
+                ? vm.products
+                : vm.products
+                    .where((p) => p.name.toLowerCase().contains(query))
+                    .toList();
 
-          return CustomScrollView(
-            physics: const BouncingScrollPhysics(),
-            // Quan trọng cho refresh mượt
-            slivers: [
-              // ==================== APP BAR ====================
-              AppSliverAppBar(
-                title: context.l10n.product,
-                showBackButton: true,
-                height: 150,
-                actions: [
-                  AppAddButton(
-                    onPressed: () => context.push(AppRoutes.productAdd),
-                  ),
-                ],
-                bottom: AppSearchField(controller: searchController),
-              ),
-
-              // ==================== CUPERTINO REFRESH ====================
-              CupertinoSliverRefreshControl(
-                onRefresh: _onRefresh,
-              ),
-
-              // ==================== CONTENT ====================
-              SliverPadding(
-                padding: const EdgeInsets.fromLTRB(16, 24, 16, 80),
-                sliver: SliverList(
-                  delegate: SliverChildListDelegate([
-                    const SizedBox(height: 10),
-                    Text(
-                      '${context.l10n.product_list} (${filteredProducts.length})',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    if (filteredProducts.isEmpty)
-                      _buildEmptySearchResult()
-                    else
-                      ...filteredProducts.map((p) => _buildProductCard(p)),
-                  ]),
-                ),
-              ),
-            ],
-          );
-        },
-      ),
-    );
-  }
-
-  // Hàm refresh riêng
-  Future<void> _onRefresh() async {
-    await context.read<ProductViewModel>().fetchProducts();
-  }
-
-  // ==================== PRODUCT CARD ====================
-  Widget _buildProductCard(Product p) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-
-    final priceFormatter = NumberFormat("#,###", "vi_VN");
-    final String formattedPrice = "${priceFormatter.format(p.sellingPrice)} đ";
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: cs.surface,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: cs.outlineVariant.withOpacity(0.4)),
-        boxShadow: [
-          BoxShadow(
-            color: cs.shadow.withOpacity(0.04),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          )
-        ],
-      ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(24),
-        onTap: () => context.push(AppRoutes.productDetail, extra: p),
-        onLongPress: () => _showDeleteDialog(p), // Thêm long press hỗ trợ
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            children: [
-              // Ảnh / Icon
-              Container(
-                width: 64,
-                height: 64,
-                decoration: BoxDecoration(
-                  color: cs.primaryContainer.withOpacity(0.4),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Icon(
-                  Icons.inventory_2_rounded,
-                  color: cs.primary,
-                  size: 28,
-                ),
-              ),
-              const SizedBox(width: 16),
-
-              // Thông tin
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      p.name,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: -0.2,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        // Đơn vị
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: cs.secondaryContainer.withOpacity(0.5),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            p.unit ?? "Cái",
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              color: cs.onSecondaryContainer,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        // Tồn kho
-                        Text(
-                          'Kho: ${p.unitsPerPack ?? 0}',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: (p.unitsPerPack ?? 0) < 5
-                                ? cs.error
-                                : cs.onSurfaceVariant,
-                            fontWeight: (p.unitsPerPack ?? 0) < 5
-                                ? FontWeight.bold
-                                : FontWeight.normal,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      formattedPrice,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        color: cs.primary,
-                        fontWeight: FontWeight.bold,
-                      ),
+            return CustomScrollView(
+              physics: const BouncingScrollPhysics(),
+              slivers: [
+                AppSliverAppBar(
+                  title: context.l10n.product,
+                  showBackButton: true,
+                  height: 150,
+                  actions: [
+                    AppAddButton(
+                      onPressed: () => context.push(AppRoutes.productAdd),
                     ),
                   ],
+                  bottom: AppSearchField(controller: searchController),
                 ),
-              ),
-
-              // Menu hành động
-              PopupMenuButton<String>(
-                icon: Icon(Icons.more_vert_rounded, color: cs.outline),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                onSelected: (value) {
-                  if (value == 'delete') {
-                    _showDeleteDialog(p);
-                  } else if (value == 'edit') {
-                    // TODO: Điều hướng chỉnh sửa
-                    // context.push(AppRoutes.productEdit, extra: p);
-                  }
-                },
-                itemBuilder: (_) => [
-                  PopupMenuItem(
-                    value: 'edit',
-                    child: Row(
-                      children: [
-                        Icon(Icons.edit_outlined, size: 18, color: cs.primary),
-                        const SizedBox(width: 8),
-                        Text(context.l10n.common_edit),
-                      ],
-                    ),
+                CupertinoSliverRefreshControl(onRefresh: _onRefresh),
+                SliverPadding(
+                  padding: EdgeInsets.fromLTRB(
+                    context.rw(16),
+                    context.rh(24),
+                    context.rw(16),
+                    context.rh(80),
                   ),
-                  PopupMenuItem(
-                    value: 'delete',
-                    child: Row(
-                      children: [
-                        Icon(Icons.delete_outline_rounded,
-                            size: 18, color: cs.error),
-                        const SizedBox(width: 8),
-                        Text(
-                          context.l10n.common_delete,
-                          style: TextStyle(color: cs.error),
+                  sliver: SliverList(
+                    delegate: SliverChildListDelegate([
+                      _buildSectionTitle(theme, filteredProducts.length),
+                      const SizedBox(height: 12),
+                      if (filteredProducts.isEmpty)
+                        _buildEmptyState()
+                      else
+                        ...filteredProducts.map(
+                          (p) => _buildProductCard(p, cs, theme),
                         ),
-                      ],
-                    ),
+                    ]),
                   ),
-                ],
-              ),
-            ],
-          ),
+                ),
+              ],
+            );
+          },
         ),
       ),
     );
   }
 
-  // Dialog xác nhận xóa (tách riêng cho sạch và dễ quản lý)
-  void _showDeleteDialog(Product p) {
-    showPopup(
-      context: context,
-      type: AlertType.warning,
-      title: "Cảnh báo",
-      content: "Bạn có muốn xóa sản phẩm này không?",
-      onCancelPressed: () {},
-      onOkPressed: () async {
-        final success =
-            await context.read<ProductViewModel>().deleteProduct(p.id!);
+  Future<void> _onRefresh() async {
+    await context.read<ProductViewModel>().fetchProducts();
+  }
 
-        if (success) {
-          AppSnackbar.showSuccess(context, "Xóa thành công");
-        } else {
-          AppSnackbar.showError(
-              context, "Xóa thất bại"); // Nên có hàm showError
-        }
-      },
+  Widget _buildSectionTitle(ThemeData theme, int count) {
+    return Text(
+      '${context.l10n.product_list} ($count)',
+      style: theme.textTheme.titleMedium?.copyWith(
+        fontWeight: FontWeight.bold,
+        fontSize: context.sp(15),
+      ),
     );
   }
 
-  // ==================== EMPTY STATE ====================
-  Widget _buildEmptySearchResult() {
+  Widget _buildProductCard(Product p, ColorScheme cs, ThemeData theme) {
+    final priceFormatter = NumberFormat("#,###", "vi_VN");
+    final String formattedPrice = "${priceFormatter.format(p.sellingPrice)} đ";
+
+    return Container(
+      margin: EdgeInsets.only(bottom: context.rh(12)),
+      decoration: BoxDecoration(
+        color: cs.surface,
+        borderRadius: BorderRadius.circular(context.rr(24)),
+        border: Border.all(color: cs.outlineVariant.withOpacity(0.5)),
+        boxShadow: [
+          BoxShadow(
+            color: cs.shadow.withOpacity(0.05),
+            blurRadius: 15,
+            offset: const Offset(0, 4),
+          )
+        ],
+      ),
+      child: ListTile(
+        contentPadding: EdgeInsets.symmetric(
+          horizontal: context.rw(16),
+          vertical: context.rh(12),
+        ),
+        onTap: () => showIosActionSheet(
+          context: context,
+          name: p.name,
+          onEdit: () {
+            // TODO: Thay bằng route edit nếu bạn đã có
+            // context.push(AppRoutes.productEdit, extra: p);
+          },
+          onDetail: () {
+            context.push(AppRoutes.productDetail, extra: p);
+          },
+          onDelete: () async {
+            return context.read<ProductViewModel>().deleteProduct(p.id!);
+          },
+        ),
+
+        // ===== ICON =====
+        leading: Container(
+          width: context.rw(64),
+          height: context.rw(64),
+          decoration: BoxDecoration(
+            color: cs.primaryContainer.withOpacity(0.4),
+            borderRadius: BorderRadius.circular(context.rr(16)),
+          ),
+          child: Icon(
+            Icons.inventory_2_rounded,
+            color: cs.primary,
+            size: context.sp(28),
+          ),
+        ),
+
+        // ===== TITLE & INFO =====
+        title: Row(
+          children: [
+            Expanded(
+              child: Text(
+                p.name,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  fontSize: context.sp(15),
+                  letterSpacing: -0.2,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            _buildUnitBadge(p, cs, theme),
+          ],
+        ),
+
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                Text(
+                  'Kho: ${p.unitsPerPack ?? 0}',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: (p.unitsPerPack ?? 0) < 5
+                        ? cs.error
+                        : cs.onSurfaceVariant,
+                    fontWeight: (p.unitsPerPack ?? 0) < 5
+                        ? FontWeight.bold
+                        : FontWeight.normal,
+                    fontSize: context.sp(12),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              formattedPrice,
+              style: theme.textTheme.titleMedium?.copyWith(
+                color: cs.primary,
+                fontWeight: FontWeight.bold,
+                fontSize: context.sp(15),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildUnitBadge(Product p, ColorScheme cs, ThemeData theme) {
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: context.rw(8),
+        vertical: context.rh(4),
+      ),
+      decoration: BoxDecoration(
+        color: cs.secondaryContainer.withOpacity(0.6),
+        borderRadius: BorderRadius.circular(context.rr(6)),
+      ),
+      child: Text(
+        p.unit,
+        style: theme.textTheme.labelSmall?.copyWith(
+          color: cs.error,
+          fontWeight: FontWeight.bold,
+          fontSize: context.sp(11),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 80),
+        padding: EdgeInsets.symmetric(vertical: context.rh(80)),
         child: Column(
           children: [
             Icon(
-              Icons.search_off_rounded,
-              size: 80,
+              Icons.inventory_2_outlined,
+              size: context.sp(80),
               color: Colors.grey.shade300,
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: context.rh(16)),
             Text(
-              'Không tìm thấy sản phẩm',
+              context.l10n.no_data ?? 'Không tìm thấy sản phẩm',
               style: TextStyle(
-                fontSize: 16,
+                fontSize: context.sp(16),
                 color: Colors.grey.shade600,
                 fontWeight: FontWeight.w500,
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: context.rh(8)),
             Text(
-              'Thử tìm kiếm với từ khóa khác',
+              context.l10n.no_data ?? 'Thử tìm kiếm với từ khóa khác',
               style: TextStyle(
-                fontSize: 14,
+                fontSize: context.sp(14),
                 color: Colors.grey.shade500,
               ),
             ),

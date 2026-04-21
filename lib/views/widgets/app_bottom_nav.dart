@@ -1,23 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:manager/core/extensions/l10n_extension.dart';
+import 'package:manager/l10n/app_localizations.dart';
 
 class AppBottomNav extends StatelessWidget {
   final int currentIndex;
   final Function(int) onTap;
   final VoidCallback onFabPressed;
 
-  const AppBottomNav({
+  AppBottomNav({
     super.key,
     required this.currentIndex,
     required this.onTap,
     required this.onFabPressed,
   });
 
-  static const _items = [
-    _NavItem(icon: Icons.dashboard, label: 'Tổng quan'),
-    _NavItem(icon: Icons.payments_sharp, label: 'Hóa đơn'),
-    _NavItem(icon: Icons.inventory, label: 'Hình ảnh'),
-    _NavItem(icon: Icons.settings, label: 'Cài đặt'),
-  ];
+  List<_NavItem> _items(BuildContext context) {
+    return [
+      _NavItem(icon: Icons.dashboard, label: context.l10n.dashboard_text),
+      _NavItem(icon: Icons.payments_sharp, label: context.l10n.invoice),
+      _NavItem(icon: Icons.inventory, label: 'Hình ảnh'),
+      _NavItem(icon: Icons.settings, label: context.l10n.settings),
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -91,7 +95,7 @@ class AppBottomNav extends StatelessWidget {
   }
 
   Widget _buildItem(BuildContext context, int index) {
-    final item = _items[index];
+    final item = _items(context)[index];
     final isSelected = currentIndex == index;
 
     final primary = Theme.of(context).colorScheme.tertiary;

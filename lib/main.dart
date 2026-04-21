@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:go_router/go_router.dart';
 import 'package:manager/core/di/injector.dart';
 import 'package:manager/core/router/app_router.dart';
 import 'package:manager/data/repositories/product_repository.dart';
@@ -16,17 +17,6 @@ import 'package:manager/viewmodels/supplier_viewmodel.dart';
 import 'package:manager/viewmodels/theme_viewmodel.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
-// Future<void> main() async {
-//   WidgetsFlutterBinding.ensureInitialized();
-//
-//   await dotenv.load(fileName: ".env");
-//
-//   setupLocator();
-//
-//   runApp(const MyApp());
-// }
-// main.dart
 
 Future<void> main() async {
   // 1. Đảm bảo Flutter framework đã sẵn sàng
@@ -71,9 +61,11 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(
           create: (_) => LanguageViewModel(initialLanguageCode),
         ),
-        ChangeNotifierProvider(
-          create: (_) => getIt<AuthViewModel>(),
-        ),
+        ChangeNotifierProvider(create: (_) {
+          final vm = getIt<AuthViewModel>();
+          vm.loadToken();
+          return vm;
+        }),
         ChangeNotifierProvider(
           create: (_) => DashboardViewModel(),
         ),
@@ -93,33 +85,37 @@ class MyApp extends StatelessWidget {
           create: (_) => getIt<SupplierViewmodel>(),
         ),
       ],
-      // providers: [
-      //   ChangeNotifierProvider(create: (_) => ThemeViewModel()..loadTheme()),
-      //   ChangeNotifierProvider(
-      //       create: (_) => LanguageViewModel()..loadLanguage()),
-      //   ChangeNotifierProvider(create: (_) => getIt<AuthViewModel>()),
-      //   ChangeNotifierProvider(create: (_) => DashboardViewModel()),
-      //   ChangeNotifierProvider(
-      //     create: (_) => getIt<InvoiceViewmodel>(),
-      //   ),
-      //   // bỏ loadDashboard
-      // ],
       child: const RootApp(),
     );
   }
 }
 
-class RootApp extends StatelessWidget {
+class RootApp extends StatefulWidget {
   const RootApp({super.key});
+
+  @override
+  State<RootApp> createState() => _RootAppState();
+}
+
+class _RootAppState extends State<RootApp> {
+  late final GoRouter _router;
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    final authVM = context.read<AuthViewModel>(); // ❗ dùng read
+    _router = AppRouter.createRouter(authVM);
+  }
 
   @override
   Widget build(BuildContext context) {
     final themeVM = context.watch<ThemeViewModel>();
     final langVM = context.watch<LanguageViewModel>();
-
+// 👈 tạo router
     return MaterialApp.router(
       debugShowCheckedModeBanner: false,
-      routerConfig: AppRouter.router,
+      routerConfig: _router,
       locale: langVM.locale,
       supportedLocales: const [
         Locale('en'),

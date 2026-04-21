@@ -21,6 +21,39 @@ class AppLocalizationsVi extends AppLocalizations {
   String get password_text => 'Mật khẩu';
 
   @override
+  String get en => 'Tiếng anh';
+
+  @override
+  String get vi => 'Tiếng việt';
+
+  @override
+  String get language_text => 'Ngôn ngữ';
+
+  @override
+  String get theme_text => 'Giao diện';
+
+  @override
+  String get logout_text => 'Đăng xuất';
+
+  @override
+  String get login_success => 'Đăng nhập thành công';
+
+  @override
+  String get login_failed => 'Đăng nhập thất bại';
+
+  @override
+  String get logout_success => 'Đăng xuất thành công';
+
+  @override
+  String get yes => 'Có';
+
+  @override
+  String get no => 'Không';
+
+  @override
+  String get confirm => 'Xác nhận';
+
+  @override
   String get common_save => 'Lưu';
 
   @override
@@ -46,6 +79,40 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get common_detail => 'Chi tiết';
+
+  @override
+  String get common_warning => 'Cảnh báo';
+
+  @override
+  String action_success(Object action, Object item) {
+    return '$action $item thành công';
+  }
+
+  @override
+  String action_failed(Object action, Object item) {
+    return '$action $item thất bại';
+  }
+
+  @override
+  String confirmDeleteItem(String item) {
+    return 'Bạn có chắc muốn xóa $item này không?';
+  }
+
+  @override
+  String actionSuccess(String action, String item) {
+    return '$action $item thành công';
+  }
+
+  @override
+  String actionFailed(String action, String item) {
+    return '$action $item thất bại';
+  }
+
+  @override
+  String get confirm_delete => 'Bạn có chắc muốn xóa không?';
+
+  @override
+  String get confirm_logout => 'Bạn có chắc muốn đăng xuất không?';
 
   @override
   String get quick_actions => 'Chức năng nhanh';
@@ -193,9 +260,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get message_error => 'Lỗi';
-
-  @override
-  String get confirm_delete => 'Bạn có chắc muốn xóa không?';
 
   @override
   String get no_data => 'Không có dữ liệu';

@@ -8,6 +8,7 @@ import 'package:manager/views/widgets/app_search_field.dart';
 import 'package:manager/views/widgets/app_sliver_app_bar.dart';
 import 'package:manager/views/widgets/app_snackbar.dart';
 import 'package:manager/views/widgets/custom_popup.dart';
+import 'package:manager/views/widgets/ios_action_sheet.dart';
 import 'package:manager/views/widgets/shared/app_add_button.dart';
 import 'package:manager/views/widgets/shared/app_summary_card.dart';
 import 'package:provider/provider.dart';
@@ -137,8 +138,17 @@ class _SupplierListScreenState extends State<SupplierListScreen> {
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(24),
-        //onTap: () => context.push(AppRoutes.sup, extra: supplier), // Dùng route name
-        onLongPress: () => _showDeleteDialog(supplier),
+        onTap: () => showIosActionSheet(
+          context: context,
+          name: supplier.name,
+          onDelete: () async {
+            return await context
+                .read<SupplierViewmodel>()
+                .deleteSupplier(supplier.id!);
+          },
+          onEdit: () {},
+          onDetail: () {},
+        ),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -283,29 +293,6 @@ class _SupplierListScreenState extends State<SupplierListScreen> {
           fontSize: 9,
         ),
       ),
-    );
-  }
-
-  // Dialog xóa riêng (sửa logic async + kiểm tra success)
-  void _showDeleteDialog(Supplier supplier) {
-    showPopup(
-      context: context,
-      type: AlertType.warning,
-      title: "Cảnh báo",
-      content: "Bạn có muốn xóa nhà cung cấp này không?",
-      onCancelPressed: () {},
-      onOkPressed: () async {
-        final success = await context
-            .read<SupplierViewmodel>()
-            .deleteSupplier(supplier.id!);
-
-        if (success) {
-          AppSnackbar.showSuccess(context, "Xóa thành công");
-        } else {
-          AppSnackbar.showError(
-              context, "Xóa thất bại"); // Nên có hàm showError
-        }
-      },
     );
   }
 
