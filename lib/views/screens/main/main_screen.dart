@@ -40,6 +40,7 @@ class _MainScreenState extends State<MainScreen> {
           context.push(AppRoutes.invoiceAdd);
         },
       ),
+      resizeToAvoidBottomInset: true,
     );
   }
 }

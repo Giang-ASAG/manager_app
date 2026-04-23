@@ -107,93 +107,95 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       );
     }
     return Scaffold(
-        backgroundColor: cs.surfaceContainerLowest,
-        body: CustomScrollView(
-          slivers: [
-            AppSliverAppBar(
-              title: context.l10n.product_detail,
-              showBackButton: true,
-              height: 80,
-            ),
-            SliverPadding(
-              padding: const EdgeInsets.fromLTRB(0, 8, 0, 100),
-              sliver: SliverList(
-                delegate: SliverChildListDelegate([
-                  // ── HERO CARD ──────────────────────────────────
-                  _buildHeroCard(context, product, cs, textTheme),
+      backgroundColor: cs.surfaceContainerLowest,
+      body: CustomScrollView(
+        slivers: [
+          AppSliverAppBar(
+            title: context.l10n.product_detail,
+            showBackButton: true,
+            height: 80,
+          ),
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(0, 8, 0, 100),
+            sliver: SliverList(
+              delegate: SliverChildListDelegate([
+                // ── HERO CARD ──────────────────────────────────
+                _buildHeroCard(context, product, cs, textTheme),
 
-                  // ── THÔNG SỐ KỸ THUẬT ──────────────────────────
+                // ── THÔNG SỐ KỸ THUẬT ──────────────────────────
+                _buildSection(
+                  context,
+                  title: 'Thông số kỹ thuật',
+                  children: [
+                    _buildRow(context, 'Thông số', product.specifications),
+                    _buildRow(
+                      context,
+                      'Trọng lượng',
+                      product.weight != null ? '${product.weight} kg' : null,
+                    ),
+                    _buildRow(context, 'Độ dày', product.thickness),
+                  ],
+                ),
+
+                // ── ĐƠN VỊ & TỒN KHO ───────────────────────────
+                _buildUnitStockCard(context, product, cs),
+
+                // ── MÔ TẢ ───────────────────────────────────────
+                if (product.description?.isNotEmpty == true)
                   _buildSection(
                     context,
-                    title: 'Thông số kỹ thuật',
+                    title: 'Mô tả',
                     children: [
-                      _buildRow(context, 'Thông số', product.specifications),
-                      _buildRow(
-                        context,
-                        'Trọng lượng',
-                        product.weight != null ? '${product.weight} kg' : null,
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text(
+                          product.description!,
+                          style: textTheme.bodyMedium?.copyWith(
+                            color: cs.onSurfaceVariant,
+                            height: 1.6,
+                          ),
+                        ),
                       ),
-                      _buildRow(context, 'Độ dày', product.thickness),
                     ],
                   ),
 
-                  // ── ĐƠN VỊ & TỒN KHO ───────────────────────────
-                  _buildUnitStockCard(context, product, cs),
-
-                  // ── MÔ TẢ ───────────────────────────────────────
-                  if (product.description?.isNotEmpty == true)
-                    _buildSection(
-                      context,
-                      title: 'Mô tả',
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.only(top: 4),
-                          child: Text(
-                            product.description!,
-                            style: textTheme.bodyMedium?.copyWith(
-                              color: cs.onSurfaceVariant,
-                              height: 1.6,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-
-                  // ── NGÀY TẠO ────────────────────────────────────
-                  if (product.createdAt != null)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 8),
-                      child: Text(
-                        'Ngày tạo: ${product.createdAt}',
-                        style: textTheme.bodySmall?.copyWith(
-                          color: cs.onSurfaceVariant,
-                        ),
+                // ── NGÀY TẠO ────────────────────────────────────
+                if (product.createdAt != null)
+                  Padding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: Text(
+                      'Ngày tạo: ${product.createdAt}',
+                      style: textTheme.bodySmall?.copyWith(
+                        color: cs.onSurfaceVariant,
                       ),
                     ),
-                ]),
-              ),
+                  ),
+              ]),
             ),
-          ],
-        ),
-        bottomNavigationBar: ActionBottomButtons(
-          isDeleting: _isDeleting,
-          editText: context.l10n.product_edit,
-          deleteText: context.l10n.product_delete,
-          onDelete: () {
-            showPopup(
-              context: context,
-              onOkPressed: _handleDelete,
-              onCancelPressed: () {},
-              content: context.l10n.confirmDeleteItem(product.name),
-              title: context.l10n.product_delete,
-              type: AlertType.warning,
-            );
-          },
-          onEdit: () {
-            context.push(AppRoutes.productEdit, extra: product);
-          },
-        ));
+          ),
+        ],
+      ),
+      bottomNavigationBar: ActionBottomButtons(
+        isDeleting: _isDeleting,
+        editText: context.l10n.product_edit,
+        deleteText: context.l10n.product_delete,
+        onDelete: () {
+          showPopup(
+            context: context,
+            onOkPressed: _handleDelete,
+            onCancelPressed: () {},
+            content: context.l10n.confirmDeleteItem(product.name),
+            title: context.l10n.product_delete,
+            type: AlertType.warning,
+          );
+        },
+        onEdit: () {
+          context.push(AppRoutes.productEdit, extra: product);
+        },
+      ),
+      resizeToAvoidBottomInset: true,
+    );
   }
 
   // --- CÁC WIDGET THÀNH PHẦN ---

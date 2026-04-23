@@ -13,6 +13,7 @@ import 'package:manager/viewmodels/dashboard_viewmodel.dart';
 import 'package:manager/viewmodels/invoice_viewmodel.dart';
 import 'package:manager/viewmodels/language_viewmodel.dart';
 import 'package:manager/viewmodels/product_viewmodel.dart';
+import 'package:manager/viewmodels/purchase_viewmodel.dart';
 import 'package:manager/viewmodels/supplier_viewmodel.dart';
 import 'package:manager/viewmodels/theme_viewmodel.dart';
 import 'package:provider/provider.dart';
@@ -86,6 +87,9 @@ class MyApp extends StatelessWidget {
         ),
         ChangeNotifierProvider(
           create: (_) => getIt<BranchViewModel>(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => getIt<PurchaseViewmodel>(),
         ),
       ],
       child: const RootApp(),

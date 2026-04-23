@@ -24,6 +24,8 @@ import 'package:manager/views/screens/main/main_screen.dart';
 import 'package:manager/views/screens/product/product_detail_screen.dart';
 import 'package:manager/views/screens/product/product_form_screen.dart';
 import 'package:manager/views/screens/product/product_list_screen.dart';
+import 'package:manager/views/screens/purchase/purchase_detail_screen.dart';
+import 'package:manager/views/screens/purchase/purchase_list_screen.dart';
 import 'package:manager/views/screens/supplier/supplier_detail_screen.dart';
 import 'package:manager/views/screens/supplier/supplier_form_screen.dart';
 import 'package:manager/views/screens/supplier/supplier_list_screen.dart';
@@ -194,6 +196,18 @@ class AppRouter {
           builder: (context, state) {
             final branch = state.extra as Branch;
             return BranchDetailScreen(branch: branch);
+          },
+        ),
+
+        GoRoute(
+          path: AppRoutes.purchases,
+          builder: (context, state) => const PurchaseListScreen(),
+        ),
+        GoRoute(
+          path: AppRoutes.purchaseDetail,
+          builder: (context, state) {
+            final id = state.extra is int ? state.extra as int : 0;
+            return PurchaseDetailScreen(id: id);
           },
         ),
       ],

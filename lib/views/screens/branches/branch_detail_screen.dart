@@ -116,6 +116,7 @@ class _BranchDetailScreenState extends State<BranchDetailScreen> {
           context.push(AppRoutes.branchEdit, extra: branch);
         },
       ),
+      resizeToAvoidBottomInset: true,
     );
   }
 

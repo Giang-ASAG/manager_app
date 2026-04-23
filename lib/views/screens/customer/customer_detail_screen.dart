@@ -144,6 +144,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
           context.push(AppRoutes.customerEdit, extra: customer);
         },
       ),
+      resizeToAvoidBottomInset: true,
     );
   }
 

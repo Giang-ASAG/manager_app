@@ -31,7 +31,6 @@ dependencies:
 
   # 💾 Lưu token, settings
   shared_preferences: ^2.5.0
-  collection: ^1.19.1
 
 dev_dependencies:
   flutter_test:

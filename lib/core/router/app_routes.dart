@@ -22,6 +22,12 @@ class AppRoutes {
   static const invoiceAdd = "/invoice/add";
   static const invoiceDetail = "/invoice/detail/:id";
 
+  // Purchases
+  static const purchases = "/purchases";
+  static const purchaseAdd = "/purchase/add";
+  static const purchaseDetail = "/purchase/detail/:id";
+  static const purchaseEdit = "/purchase/edit/:id";
+
   static const suppliers = "/suppliers";
   static const supplierAdd = "/supplier/add";
   static const supplierDetail = "/supplier/detail/:id";

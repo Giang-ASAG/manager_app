@@ -176,6 +176,7 @@ class _SupplierDetailScreenState extends State<SupplierDetailScreen> {
           context.push(AppRoutes.supplierEdit, extra: supplier);
         },
       ),
+      resizeToAvoidBottomInset: true,
     );
   }
 

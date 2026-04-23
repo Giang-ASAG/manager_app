@@ -107,7 +107,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           const Color(0xFFE07B1A), '/purchases'),
       _ActionItem('Quản lý kho', Icons.warehouse_rounded,
           const Color(0xFF0FA37A), '/inventory'),
-      _ActionItem('Quản chi nhánh', Icons.branding_watermark_rounded,
+      _ActionItem('Chi nhánh', Icons.branding_watermark_rounded,
           const Color(0xFF0FA37A), '/branches'),
       _ActionItem('Công nợ', Icons.account_balance_wallet_rounded,
           const Color(0xFF7C3AED), '/debt'),
