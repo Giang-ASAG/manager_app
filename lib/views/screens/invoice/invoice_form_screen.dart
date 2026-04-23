@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:manager/core/extensions/l10n_extension.dart';
 import 'package:manager/core/utils/app_responsive.dart';
 import 'package:manager/data/models/customer.dart';
@@ -40,9 +41,16 @@ class InvoiceFormScreen extends StatefulWidget {
   State<InvoiceFormScreen> createState() => _InvoiceFormScreenState();
 }
 
-class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
+class _InvoiceFormScreenState extends State<InvoiceFormScreen>
+    with SingleTickerProviderStateMixin {           // ← thêm mixin
   final _formKey = GlobalKey<FormState>();
   final _currencyFormatter = NumberFormat('#,##0', 'vi_VN');
+
+  // ── Loading / animation ──────────────────────────────
+  bool _isPageReady = false;
+  late AnimationController _animController;
+  late Animation<double> _fadeAnim;
+  late Animation<Offset> _slideAnim;
 
   // Form State
   DateTime _invoiceDate = DateTime.now();
@@ -60,27 +68,48 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
   // Computed values
   double get _subtotal =>
       _lineItems.fold(0.0, (sum, item) => sum + item.lineTotal);
-
   double get _total => (_subtotal - _discount).clamp(0.0, double.infinity);
-
   double get _change => (_cashReceived - _total).clamp(0.0, double.infinity);
-
   double get _debt => (_total - _cashReceived).clamp(0.0, double.infinity);
-
   bool get _hasDebt => _cashReceived > 0 && _cashReceived < _total;
+
+  // ── Lifecycle ────────────────────────────────────────
 
   @override
   void initState() {
     super.initState();
+
+    _animController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 500),
+    );
+    _fadeAnim = CurvedAnimation(parent: _animController, curve: Curves.easeIn);
+    _slideAnim = Tween<Offset>(
+      begin: const Offset(0, 0.05),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+        parent: _animController, curve: Curves.easeOutCubic));
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<ProductViewModel>().fetchProducts();
       context.read<CustomerViewmodel>().fetchCustomers();
       context.read<InvoiceViewmodel>().fetchInvoices();
     });
+
+    _preparePage();
+  }
+
+  Future<void> _preparePage() async {
+    await Future.delayed(const Duration(milliseconds: 450));
+    if (mounted) {
+      setState(() => _isPageReady = true);
+      _animController.forward();
+    }
   }
 
   @override
   void dispose() {
+    _animController.dispose();
     _nameController.dispose();
     _phoneController.dispose();
     _addressController.dispose();
@@ -135,20 +164,15 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
       return;
     }
 
-    // ==================== XỬ LÝ STATUS THEO ENUM BACKEND ====================
     String finalStatus;
-
     if (_cashReceived >= _total) {
-      finalStatus = 'Paid'; // Đã thanh toán đủ
+      finalStatus = 'Paid';
     } else if (_cashReceived > 0) {
-      finalStatus = 'Sent'; // Đã gửi (có thanh toán một phần)
+      finalStatus = 'Sent';
     } else {
-      finalStatus = 'Draft'; // Chỉ nhập, chưa gửi
+      finalStatus = 'Draft';
     }
 
-    // Nếu muốn hỗ trợ Overdue, có thể kiểm tra ngày hết hạn sau
-
-    // ==================== TẠO PAYMENTS ====================
     List<Payment> payList = [];
     if (_cashReceived > 0) {
       payList.add(Payment(
@@ -161,23 +185,21 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
       ));
     }
 
-    // ==================== TẠO INVOICE ITEMS ====================
     final invoiceItems = _lineItems
         .map((item) => InvoiceItem(
-              productId: item.product.id,
-              productName: item.product.name,
-              unitPrice: item.unitPrice,
-              qty: item.qty,
-              unit: item.product.unit ?? '',
-              lineTotal: item.lineTotal,
-            ))
+      productId: item.product.id,
+      productName: item.product.name,
+      unitPrice: item.unitPrice,
+      qty: item.qty,
+      unit: item.product.unit ?? '',
+      lineTotal: item.lineTotal,
+    ))
         .toList();
 
-    // ==================== TẠO INVOICE ====================
     final newInvoice = Invoice(
       id: 0,
       invoiceNumber:
-          'INV0-00000${context.read<InvoiceViewmodel>().invoices.length + 1}',
+      'INV0-00000${context.read<InvoiceViewmodel>().invoices.length + 1}',
       customerName: _nameController.text.trim(),
       customerId: _selectedCustomer?.id ?? 0,
       customerAddress: _addressController.text.trim(),
@@ -195,7 +217,7 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
     );
 
     final success =
-        await context.read<InvoiceViewmodel>().createInvoice(newInvoice);
+    await context.read<InvoiceViewmodel>().createInvoice(newInvoice);
 
     if (success) {
       AppSnackbar.showSuccess(
@@ -219,46 +241,77 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
     final productVM = context.watch<ProductViewModel>();
     final customerVM = context.watch<CustomerViewmodel>();
     final invoiceVM = context.watch<InvoiceViewmodel>();
-    final isLoading = productVM.isLoading || customerVM.isLoading;
 
     return Scaffold(
       backgroundColor: cs.surfaceContainerLowest,
-      body: Form(
-        key: _formKey,
-        child: isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : CustomScrollView(
-                slivers: [
-                  AppSliverAppBar(
-                    title: context.l10n.invoice_add,
-                    showBackButton: true,
-                    height: 80,
+      // ── bottomSheet chỉ hiện khi trang đã sẵn sàng ──
+      bottomSheet: _isPageReady
+          ? Container(
+        decoration: BoxDecoration(
+          color: cs.surface,
+          border: Border(
+              top: BorderSide(
+                  color: cs.outlineVariant.withOpacity(0.3))),
+          boxShadow: [
+            BoxShadow(
+              color: cs.shadow.withOpacity(0.06),
+              blurRadius: 12,
+              offset: const Offset(0, -3),
+            ),
+          ],
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(context.rw(16),
+                context.rh(12), context.rw(16), context.rh(12)),
+            child: AppButton(
+              text: context.l10n.invoice_save,
+              isLoading: productVM.isLoading,
+              onPressed: _submitForm,
+            ),
+          ),
+        ),
+      )
+          : null,
+      body: !_isPageReady
+      // ── Loading state ─────────────────────────────────
+          ? Center(
+        child: LoadingAnimationWidget.dotsTriangle(
+          color: cs.primary,
+          size: context.rw(32),
+        ),
+      )
+      // ── Content với fade + slide ──────────────────────
+          : FadeTransition(
+        opacity: _fadeAnim,
+        child: SlideTransition(
+          position: _slideAnim,
+          child: Form(
+            key: _formKey,
+            child: CustomScrollView(
+              physics: const BouncingScrollPhysics(),
+              slivers: [
+                AppSliverAppBar(
+                  title: context.l10n.invoice_add,
+                  showBackButton: true,
+                  height: 80,
+                ),
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(0, 8, 0, 140),
+                  sliver: SliverList(
+                    delegate: SliverChildListDelegate([
+                      _buildInvoiceInfoCard(cs, invoiceVM.invoices),
+                      _buildSectionLabel('Thông Tin Khách Hàng'),
+                      _buildCustomerSection(cs, customerVM.customers),
+                      _buildSectionLabel('Sản Phẩm'),
+                      _buildProductsSection(cs, productVM.products),
+                      _buildSectionLabel('Tổng Kết'),
+                      _buildSummarySection(cs),
+                    ]),
                   ),
-                  SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(0, 8, 0, 140),
-                    sliver: SliverList(
-                      delegate: SliverChildListDelegate([
-                        _buildInvoiceInfoCard(cs, invoiceVM.invoices),
-                        _buildSectionLabel('Thông Tin Khách Hàng'),
-                        _buildCustomerSection(cs, customerVM.customers),
-                        _buildSectionLabel('Sản Phẩm'),
-                        _buildProductsSection(cs, productVM.products),
-                        _buildSectionLabel('Tổng Kết'),
-                        _buildSummarySection(cs),
-                      ]),
-                    ),
-                  ),
-                ],
-              ),
-      ),
-      bottomSheet: SafeArea(
-        child: Padding(
-          padding: EdgeInsets.fromLTRB(
-              context.rw(16), context.rh(12), context.rw(16), context.rh(30)),
-          child: AppButton(
-            text: context.l10n.invoice_save,
-            isLoading: productVM.isLoading,
-            onPressed: _submitForm,
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -377,7 +430,7 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
                     controller: _nameController,
                     hint: 'Nhập tên khách hàng',
                     validator: (v) =>
-                        v?.trim().isEmpty ?? true ? 'Vui lòng nhập tên' : null,
+                    v?.trim().isEmpty ?? true ? 'Vui lòng nhập tên' : null,
                     cs: cs,
                   ),
                 ),
@@ -431,7 +484,7 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
               FilledButton.tonalIcon(
                 onPressed: () => _showProductPicker(products, alreadyAddedIds),
                 icon: Icon(Icons.add_rounded, size: context.sp(18)),
-                label: Text('Thêm Sản Phẩm'),
+                label: const Text('Thêm Sản Phẩm'),
                 style: FilledButton.styleFrom(
                   padding: EdgeInsets.symmetric(
                       horizontal: context.rw(14), vertical: context.rh(8)),
@@ -453,15 +506,14 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
                     const SizedBox(height: 8),
                     Text(
                       'Nhấn "Thêm Sản Phẩm" để bắt đầu',
-                      style:
-                          TextStyle(color: cs.onSurfaceVariant, fontSize: 13),
+                      style: TextStyle(
+                          color: cs.onSurfaceVariant, fontSize: 13),
                     ),
                   ],
                 ),
               ),
             )
           else ...[
-            // Table header
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
               decoration: BoxDecoration(
@@ -541,7 +593,6 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
     return _Card(
       child: Column(
         children: [
-          // Discount + Cash inputs
           Row(
             children: [
               Expanded(
@@ -574,7 +625,6 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
             ],
           ),
           SizedBox(height: context.rh(20)),
-          // Summary box
           Container(
             padding: EdgeInsets.all(context.rw(16)),
             decoration: BoxDecoration(
@@ -610,11 +660,10 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
                   cs: cs,
                 ),
                 const SizedBox(height: 12),
-                // Tiền thừa / Tiền thiếu
                 AnimatedContainer(
                   duration: const Duration(milliseconds: 250),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 14, vertical: 12),
                   decoration: BoxDecoration(
                     color: isDebtState
                         ? cs.errorContainer.withOpacity(0.45)
@@ -631,8 +680,9 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
                                 ? Icons.arrow_downward_rounded
                                 : Icons.arrow_upward_rounded,
                             size: 16,
-                            color:
-                                isDebtState ? cs.error : Colors.green.shade700,
+                            color: isDebtState
+                                ? cs.error
+                                : Colors.green.shade700,
                           ),
                           const SizedBox(width: 6),
                           Text(
@@ -652,7 +702,9 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w800,
-                          color: isDebtState ? cs.error : Colors.green.shade700,
+                          color: isDebtState
+                              ? cs.error
+                              : Colors.green.shade700,
                         ),
                       ),
                     ],
@@ -673,11 +725,11 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen> {
       child: Text(
         title.toUpperCase(),
         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              fontWeight: FontWeight.bold,
-              letterSpacing: 1.1,
-              fontSize: context.sp(11),
-              color: Theme.of(context).colorScheme.outline,
-            ),
+          fontWeight: FontWeight.bold,
+          letterSpacing: 1.1,
+          fontSize: context.sp(11),
+          color: Theme.of(context).colorScheme.outline,
+        ),
       ),
     );
   }
@@ -751,7 +803,6 @@ class _LineItemRowState extends State<_LineItemRow> {
       ),
       child: Row(
         children: [
-          // Product info
           Expanded(
             flex: 4,
             child: Column(
@@ -760,7 +811,8 @@ class _LineItemRowState extends State<_LineItemRow> {
                 Text(
                   item.product.name,
                   style: TextStyle(
-                      fontWeight: FontWeight.w600, fontSize: context.sp(13.5)),
+                      fontWeight: FontWeight.w600,
+                      fontSize: context.sp(13.5)),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -774,7 +826,6 @@ class _LineItemRowState extends State<_LineItemRow> {
             ),
           ),
           SizedBox(width: context.rw(12)),
-          // Qty + Price inputs
           Expanded(
             flex: 3,
             child: Column(
@@ -800,7 +851,6 @@ class _LineItemRowState extends State<_LineItemRow> {
             ),
           ),
           SizedBox(width: context.rw(12)),
-          // Line total
           Expanded(
             flex: 2,
             child: Text(
@@ -813,7 +863,6 @@ class _LineItemRowState extends State<_LineItemRow> {
               ),
             ),
           ),
-          // Delete
           IconButton(
             onPressed: widget.onDelete,
             icon: Icon(Icons.close_rounded,
@@ -850,22 +899,22 @@ class _ProductPickerSheetState extends State<_ProductPickerSheet> {
   String _selectedCategory = 'Tất cả';
 
   List<String> get _categories => [
-        'Tất cả',
-        ...widget.products
-            .map((p) => p.category ?? '')
-            .where((c) => c.isNotEmpty)
-            .toSet()
-            .toList()
-          ..sort(),
-      ];
+    'Tất cả',
+    ...widget.products
+        .map((p) => p.category ?? '')
+        .where((c) => c.isNotEmpty)
+        .toSet()
+        .toList()
+      ..sort(),
+  ];
 
   List<Product> get _filteredProducts => widget.products.where((p) {
-        final matchCat =
-            _selectedCategory == 'Tất cả' || p.category == _selectedCategory;
-        final matchSearch = _searchText.isEmpty ||
-            p.name.toLowerCase().contains(_searchText.toLowerCase());
-        return matchCat && matchSearch;
-      }).toList();
+    final matchCat = _selectedCategory == 'Tất cả' ||
+        p.category == _selectedCategory;
+    final matchSearch = _searchText.isEmpty ||
+        p.name.toLowerCase().contains(_searchText.toLowerCase());
+    return matchCat && matchSearch;
+  }).toList();
 
   @override
   Widget build(BuildContext context) {
@@ -879,11 +928,11 @@ class _ProductPickerSheetState extends State<_ProductPickerSheet> {
       builder: (context, scrollController) => Container(
         decoration: BoxDecoration(
           color: cs.surface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          borderRadius:
+          const BorderRadius.vertical(top: Radius.circular(24)),
         ),
         child: Column(
           children: [
-            // Handle
             Container(
               margin: EdgeInsets.symmetric(vertical: context.rh(12)),
               width: context.rw(40),
@@ -893,7 +942,6 @@ class _ProductPickerSheetState extends State<_ProductPickerSheet> {
                 borderRadius: BorderRadius.circular(context.rr(2)),
               ),
             ),
-            // Header
             Padding(
               padding: EdgeInsets.fromLTRB(
                   context.rw(16), 0, context.rw(16), context.rh(8)),
@@ -914,116 +962,126 @@ class _ProductPickerSheetState extends State<_ProductPickerSheet> {
                 ],
               ),
             ),
-            // Search
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: TextField(
                 decoration: InputDecoration(
                   hintText: 'Tìm sản phẩm...',
-                  prefixIcon: Icon(Icons.search_rounded, size: context.sp(20)),
+                  prefixIcon:
+                  Icon(Icons.search_rounded, size: context.sp(20)),
                   border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(context.rr(12))),
+                      borderRadius:
+                      BorderRadius.circular(context.rr(12))),
                   contentPadding: EdgeInsets.symmetric(
-                      horizontal: context.rw(12), vertical: context.rh(10)),
+                      horizontal: context.rw(12),
+                      vertical: context.rh(10)),
                   isDense: true,
                 ),
                 onChanged: (v) => setState(() => _searchText = v),
               ),
             ),
             SizedBox(height: context.rh(12)),
-            // Category chips
             SizedBox(
               height: context.rh(38),
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 padding: EdgeInsets.symmetric(horizontal: context.rw(16)),
                 itemCount: _categories.length,
-                separatorBuilder: (_, __) => SizedBox(width: context.rw(8)),
+                separatorBuilder: (_, __) =>
+                    SizedBox(width: context.rw(8)),
                 itemBuilder: (_, i) {
                   final cat = _categories[i];
                   return ChoiceChip(
-                    label:
-                        Text(cat, style: TextStyle(fontSize: context.sp(12))),
+                    label: Text(cat,
+                        style: TextStyle(fontSize: context.sp(12))),
                     selected: _selectedCategory == cat,
-                    onSelected: (_) => setState(() => _selectedCategory = cat),
-                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    onSelected: (_) =>
+                        setState(() => _selectedCategory = cat),
+                    materialTapTargetSize:
+                    MaterialTapTargetSize.shrinkWrap,
                   );
                 },
               ),
             ),
             SizedBox(height: context.rh(8)),
             const Divider(height: 1),
-            // Product list
             Expanded(
               child: _filteredProducts.isEmpty
                   ? Center(
-                      child: Text(
-                        'Không tìm thấy sản phẩm',
-                        style: TextStyle(color: cs.onSurfaceVariant),
-                      ),
-                    )
+                child: Text(
+                  'Không tìm thấy sản phẩm',
+                  style:
+                  TextStyle(color: cs.onSurfaceVariant),
+                ),
+              )
                   : ListView.separated(
-                      controller: scrollController,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
-                      itemCount: _filteredProducts.length,
-                      separatorBuilder: (_, __) => Divider(
-                          height: 1, color: cs.outlineVariant.withOpacity(0.4)),
-                      itemBuilder: (_, i) {
-                        final product = _filteredProducts[i];
-                        final isAdded =
-                            widget.alreadyAdded.contains(product.id);
+                controller: scrollController,
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 8, vertical: 4),
+                itemCount: _filteredProducts.length,
+                separatorBuilder: (_, __) => Divider(
+                    height: 1,
+                    color: cs.outlineVariant.withOpacity(0.4)),
+                itemBuilder: (_, i) {
+                  final product = _filteredProducts[i];
+                  final isAdded =
+                  widget.alreadyAdded.contains(product.id);
 
-                        return ListTile(
-                          dense: true,
-                          title: Text(
-                            product.name,
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: context.sp(13),
-                              color: isAdded ? cs.outline : cs.onSurface,
-                            ),
-                          ),
-                          subtitle: Text(
-                            '${product.category ?? 'Chưa phân loại'} · ${product.unit ?? ''}',
-                            style: TextStyle(
-                                fontSize: context.sp(11.5), color: cs.outline),
-                          ),
-                          trailing: isAdded
-                              ? Chip(
-                                  label: Text('Đã thêm',
-                                      style:
-                                          TextStyle(fontSize: context.sp(11))),
-                                  padding: EdgeInsets.zero,
-                                  visualDensity: VisualDensity.compact,
-                                )
-                              : Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  crossAxisAlignment: CrossAxisAlignment.end,
-                                  children: [
-                                    Text(
-                                      '${currency.format(product.purchasePrice)} đ',
-                                      style: TextStyle(
-                                        fontSize: context.sp(13),
-                                        fontWeight: FontWeight.bold,
-                                        color: cs.primary,
-                                      ),
-                                    ),
-                                    SizedBox(height: context.rh(2)),
-                                    Icon(Icons.add_circle_rounded,
-                                        size: context.sp(20),
-                                        color: Colors.green),
-                                  ],
-                                ),
-                          onTap: isAdded
-                              ? null
-                              : () {
-                                  widget.onProductSelected(product);
-                                  Navigator.pop(context);
-                                },
-                        );
-                      },
+                  return ListTile(
+                    dense: true,
+                    title: Text(
+                      product.name,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: context.sp(13),
+                        color: isAdded
+                            ? cs.outline
+                            : cs.onSurface,
+                      ),
                     ),
+                    subtitle: Text(
+                      '${product.category ?? 'Chưa phân loại'} · ${product.unit ?? ''}',
+                      style: TextStyle(
+                          fontSize: context.sp(11.5),
+                          color: cs.outline),
+                    ),
+                    trailing: isAdded
+                        ? Chip(
+                      label: Text('Đã thêm',
+                          style: TextStyle(
+                              fontSize: context.sp(11))),
+                      padding: EdgeInsets.zero,
+                      visualDensity: VisualDensity.compact,
+                    )
+                        : Column(
+                      mainAxisAlignment:
+                      MainAxisAlignment.center,
+                      crossAxisAlignment:
+                      CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          '${currency.format(product.purchasePrice)} đ',
+                          style: TextStyle(
+                            fontSize: context.sp(13),
+                            fontWeight: FontWeight.bold,
+                            color: cs.primary,
+                          ),
+                        ),
+                        SizedBox(height: context.rh(2)),
+                        Icon(Icons.add_circle_rounded,
+                            size: context.sp(20),
+                            color: Colors.green),
+                      ],
+                    ),
+                    onTap: isAdded
+                        ? null
+                        : () {
+                      widget.onProductSelected(product);
+                      Navigator.pop(context);
+                    },
+                  );
+                },
+              ),
             ),
           ],
         ),
@@ -1036,7 +1094,6 @@ class _ProductPickerSheetState extends State<_ProductPickerSheet> {
 
 class _Card extends StatelessWidget {
   const _Card({required this.child});
-
   final Widget child;
 
   @override
@@ -1064,7 +1121,6 @@ class _Card extends StatelessWidget {
 
 class _LabeledField extends StatelessWidget {
   const _LabeledField({required this.label, required this.child});
-
   final String label;
   final Widget child;
 
@@ -1074,7 +1130,8 @@ class _LabeledField extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(label,
-            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+            style:
+            const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
         const SizedBox(height: 6),
         child,
       ],
@@ -1123,7 +1180,7 @@ class _StyledTextFormField extends StatelessWidget {
           borderSide: BorderSide(color: cs.primary, width: 1.6),
         ),
         contentPadding:
-            const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         isDense: true,
       ),
     );
@@ -1154,7 +1211,7 @@ class _StyledDropdown<T> extends StatelessWidget {
       isExpanded: true,
       hint: hint != null
           ? Text(hint!,
-              style: TextStyle(color: cs.outlineVariant, fontSize: 13))
+          style: TextStyle(color: cs.outlineVariant, fontSize: 13))
           : null,
       decoration: InputDecoration(
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
@@ -1167,20 +1224,20 @@ class _StyledDropdown<T> extends StatelessWidget {
           borderSide: BorderSide(color: cs.primary, width: 1.6),
         ),
         contentPadding:
-            const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         isDense: true,
       ),
       style: const TextStyle(fontSize: 13, color: Colors.black87),
       items: items
           .map((e) => DropdownMenuItem<T>(
-                value: e,
-                child: Text(
-                  labelBuilder?.call(e) ?? e.toString(),
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 1,
-                  style: const TextStyle(fontSize: 13),
-                ),
-              ))
+        value: e,
+        child: Text(
+          labelBuilder?.call(e) ?? e.toString(),
+          overflow: TextOverflow.ellipsis,
+          maxLines: 1,
+          style: const TextStyle(fontSize: 13),
+        ),
+      ))
           .toList(),
       onChanged: onChanged,
     );
@@ -1212,7 +1269,9 @@ class _TappableField extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Expanded(child: Text(value, style: const TextStyle(fontSize: 14))),
+            Expanded(
+                child:
+                Text(value, style: const TextStyle(fontSize: 14))),
             Icon(icon, size: 18, color: cs.outline),
           ],
         ),
@@ -1257,7 +1316,8 @@ class _MiniNumberField extends StatelessWidget {
           borderRadius: BorderRadius.circular(8),
           borderSide: BorderSide(color: cs.primary),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        contentPadding:
+        const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         isDense: true,
       ),
     );

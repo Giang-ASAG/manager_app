@@ -16,6 +16,7 @@ import 'package:manager/viewmodels/product_viewmodel.dart';
 import 'package:manager/viewmodels/purchase_viewmodel.dart';
 import 'package:manager/viewmodels/supplier_viewmodel.dart';
 import 'package:manager/viewmodels/theme_viewmodel.dart';
+import 'package:manager/viewmodels/warehouse_viewmodel.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -90,6 +91,9 @@ class MyApp extends StatelessWidget {
         ),
         ChangeNotifierProvider(
           create: (_) => getIt<PurchaseViewmodel>(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => getIt<WarehouseViewModel>(),
         ),
       ],
       child: const RootApp(),

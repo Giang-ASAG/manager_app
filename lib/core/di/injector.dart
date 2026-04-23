@@ -7,6 +7,7 @@ import 'package:manager/viewmodels/invoice_viewmodel.dart';
 import 'package:manager/viewmodels/product_viewmodel.dart';
 import 'package:manager/viewmodels/purchase_viewmodel.dart';
 import 'package:manager/viewmodels/supplier_viewmodel.dart';
+import 'package:manager/viewmodels/warehouse_viewmodel.dart';
 
 import '../services/api_service.dart';
 import '../../viewmodels/auth_viewmodel.dart';
@@ -57,5 +58,8 @@ void setupLocator() {
   );
   getIt.registerFactory<PurchaseViewmodel>(
     () => PurchaseViewmodel(getIt<ManagerRepository>().purchase),
+  );
+  getIt.registerFactory<WarehouseViewModel>(
+    () => WarehouseViewModel(getIt<ManagerRepository>().warehouse),
   );
 }

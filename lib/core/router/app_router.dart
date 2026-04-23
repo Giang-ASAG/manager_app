@@ -5,6 +5,7 @@ import 'package:manager/data/models/branch.dart';
 import 'package:manager/data/models/customer.dart';
 import 'package:manager/data/models/product.dart';
 import 'package:manager/data/models/supplier.dart';
+import 'package:manager/data/models/warehouse.dart';
 import 'package:manager/viewmodels/auth_viewmodel.dart';
 
 import 'package:manager/views/screens/auth/login_screen.dart';
@@ -25,10 +26,14 @@ import 'package:manager/views/screens/product/product_detail_screen.dart';
 import 'package:manager/views/screens/product/product_form_screen.dart';
 import 'package:manager/views/screens/product/product_list_screen.dart';
 import 'package:manager/views/screens/purchase/purchase_detail_screen.dart';
+import 'package:manager/views/screens/purchase/purchase_form_screen.dart';
 import 'package:manager/views/screens/purchase/purchase_list_screen.dart';
 import 'package:manager/views/screens/supplier/supplier_detail_screen.dart';
 import 'package:manager/views/screens/supplier/supplier_form_screen.dart';
 import 'package:manager/views/screens/supplier/supplier_list_screen.dart';
+import 'package:manager/views/screens/warehouse/warehouse_detail_screen.dart';
+import 'package:manager/views/screens/warehouse/warehouse_form_screen.dart';
+import 'package:manager/views/screens/warehouse/warehouse_list_screen.dart';
 
 import 'app_routes.dart';
 
@@ -208,6 +213,34 @@ class AppRouter {
           builder: (context, state) {
             final id = state.extra is int ? state.extra as int : 0;
             return PurchaseDetailScreen(id: id);
+          },
+        ),
+        GoRoute(
+          path: AppRoutes.purchaseAdd,
+          builder: (context, state) => const PurchaseFormScreen(),
+        ),
+
+        // Warehouses Group
+        GoRoute(
+          path: AppRoutes.warehouses,
+          builder: (context, state) => const WarehouseListScreen(),
+        ),
+        GoRoute(
+          path: AppRoutes.warehouseAdd,
+          builder: (context, state) => const WarehouseFormScreen(),
+        ),
+        GoRoute(
+          path: AppRoutes.warehouseEdit,
+          builder: (context, state) {
+            final warehouse = state.extra as dynamic;
+            return WarehouseFormScreen(warehouse: warehouse);
+          },
+        ),
+        GoRoute(
+          path: AppRoutes.warehouseDetail,
+          builder: (context, state) {
+            final warehouse = state.extra as dynamic;
+            return WarehouseDetailScreen(warehouse: warehouse);
           },
         ),
       ],

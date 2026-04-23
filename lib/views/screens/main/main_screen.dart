@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:manager/core/router/app_routes.dart';
 import 'package:manager/views/screens/dashboard/dashboard_screen.dart';
 import 'package:manager/views/screens/invoice/invoice_list_screen.dart';
+import 'package:manager/views/screens/purchase/purchase_list_screen.dart';
 import 'package:manager/views/widgets/app_bottom_nav.dart';
 
 import '../settings/settings_screen.dart';
@@ -20,8 +21,7 @@ class _MainScreenState extends State<MainScreen> {
   final List<Widget> pages = [
     const DashboardScreen(),
     const InvoiceListScreen(),
-    const Center(child: Text("Inventory")),
-    // const Center(child: Text("Orders")),
+    const PurchaseListScreen(),
     const SettingsScreen(),
   ];
 

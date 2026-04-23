@@ -2,10 +2,9 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
-import 'package:manager/core/extensions/l10n_extension.dart';
 import 'package:manager/core/router/app_routes.dart';
-import 'package:manager/data/models/supplier.dart';
-import 'package:manager/viewmodels/supplier_viewmodel.dart';
+import 'package:manager/data/models/warehouse.dart';
+import 'package:manager/viewmodels/warehouse_viewmodel.dart';
 import 'package:manager/views/widgets/app_search_field.dart';
 import 'package:manager/views/widgets/app_sliver_app_bar.dart';
 import 'package:manager/views/widgets/ios_action_sheet.dart';
@@ -14,14 +13,14 @@ import 'package:manager/views/widgets/shared/app_square_icon.dart';
 import 'package:manager/views/widgets/shared/app_summary_card.dart';
 import 'package:provider/provider.dart';
 
-class SupplierListScreen extends StatefulWidget {
-  const SupplierListScreen({super.key});
+class WarehouseListScreen extends StatefulWidget {
+  const WarehouseListScreen({super.key});
 
   @override
-  State<SupplierListScreen> createState() => _SupplierListScreenState();
+  State<WarehouseListScreen> createState() => _WarehouseListScreenState();
 }
 
-class _SupplierListScreenState extends State<SupplierListScreen>
+class _WarehouseListScreenState extends State<WarehouseListScreen>
     with SingleTickerProviderStateMixin {
   final TextEditingController searchController = TextEditingController();
 
@@ -37,7 +36,7 @@ class _SupplierListScreenState extends State<SupplierListScreen>
     _preparePage();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<SupplierViewmodel>().fetchSuppliers();
+      context.read<WarehouseViewModel>().fetchWarehouses();
     });
     searchController.addListener(() => setState(() {}));
   }
@@ -69,7 +68,7 @@ class _SupplierListScreenState extends State<SupplierListScreen>
   }
 
   Future<void> _onRefresh() async {
-    await context.read<SupplierViewmodel>().fetchSuppliers();
+    await context.read<WarehouseViewModel>().fetchWarehouses();
   }
 
   @override
@@ -79,10 +78,11 @@ class _SupplierListScreenState extends State<SupplierListScreen>
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-      body: Consumer<SupplierViewmodel>(
+      body: Consumer<WarehouseViewModel>(
         builder: (_, vm, __) {
+          // Chỉ hiển thị loading khi chưa ready HOẶC đang load lần đầu
           final bool showLoading =
-              !_isPageReady || (vm.isLoading && vm.suppliers.isEmpty);
+              !_isPageReady || (vm.isLoading && vm.warehouses.isEmpty);
 
           if (showLoading) {
             return Center(
@@ -95,12 +95,11 @@ class _SupplierListScreenState extends State<SupplierListScreen>
 
           final query = searchController.text.trim().toLowerCase();
           final filtered = query.isEmpty
-              ? vm.suppliers
-              : vm.suppliers.where((s) {
-                  return s.name.toLowerCase().contains(query) ||
-                      (s.contactPerson?.toLowerCase().contains(query) ??
-                          false) ||
-                      (s.phone?.contains(query) ?? false);
+              ? vm.warehouses
+              : vm.warehouses.where((w) {
+                  return w.name.toLowerCase().contains(query) ||
+                      w.code.toLowerCase().contains(query) ||
+                      w.phone.contains(query);
                 }).toList();
 
           return FadeTransition(
@@ -112,12 +111,12 @@ class _SupplierListScreenState extends State<SupplierListScreen>
                 slivers: [
                   // ==================== HEADER ====================
                   AppSliverAppBar(
-                    title: context.l10n.supplier,
+                    title: 'Kho hàng',
                     showBackButton: true,
                     height: 150,
                     actions: [
                       AppAddButton(
-                        onPressed: () => context.push(AppRoutes.supplierAdd),
+                        onPressed: () => context.push(AppRoutes.warehouseAdd),
                       ),
                     ],
                     bottom: AppSearchField(controller: searchController),
@@ -134,17 +133,17 @@ class _SupplierListScreenState extends State<SupplierListScreen>
                     sliver: SliverList(
                       delegate: SliverChildListDelegate([
                         AppSummaryCard(
-                          label: context.l10n.supplier_list,
+                          label: 'Danh sách kho hàng',
                           value: "${filtered.length}",
-                          icon: Icons.local_shipping_outlined,
-                          color: Colors.orange,
+                          icon: Icons.warehouse_outlined,
+                          color: Colors.blue,
                         ),
                         const SizedBox(height: 14),
                         if (filtered.isEmpty)
                           _buildEmptyState()
                         else
                           ...filtered
-                              .map((s) => _buildSupplierCard(s, cs, theme)),
+                              .map((w) => _buildWarehouseCard(w, cs, theme)),
                       ]),
                     ),
                   ),
@@ -157,10 +156,10 @@ class _SupplierListScreenState extends State<SupplierListScreen>
     );
   }
 
-  // ==================== SUPPLIER CARD ====================
-  Widget _buildSupplierCard(
-      Supplier supplier, ColorScheme cs, ThemeData theme) {
-    final bool isActive = supplier.status.toLowerCase() == 'active';
+  // ==================== WAREHOUSE CARD ====================
+  Widget _buildWarehouseCard(
+      Warehouse warehouse, ColorScheme cs, ThemeData theme) {
+    final bool isActive = warehouse.status.toLowerCase() == 'active';
     final Color statusColor = isActive ? Colors.green : cs.error;
 
     return Container(
@@ -181,17 +180,20 @@ class _SupplierListScreenState extends State<SupplierListScreen>
         borderRadius: BorderRadius.circular(24),
         onTap: () => showIosActionSheet(
           context: context,
-          name: supplier.name,
+          name: warehouse.name,
           onDelete: () async {
             return await context
-                .read<SupplierViewmodel>()
-                .deleteSupplier(supplier.id!);
+                .read<WarehouseViewModel>()
+                .deleteWarehouse(warehouse.id);
           },
           onEdit: () {
-            context.push(AppRoutes.supplierEdit, extra: supplier);
+            context.push(
+              AppRoutes.warehouseEdit,
+              extra: warehouse,
+            );
           },
           onDetail: () {
-            context.push(AppRoutes.supplierDetail, extra: supplier);
+            context.push(AppRoutes.warehouseDetail, extra: warehouse);
           },
         ),
         child: Padding(
@@ -203,18 +205,17 @@ class _SupplierListScreenState extends State<SupplierListScreen>
                 children: [
                   // Avatar / Icon
                   Container(
-                    width: 56,
-                    height: 56,
-                    decoration: BoxDecoration(
-                      color: cs.primaryContainer.withOpacity(0.4),
-                      borderRadius: BorderRadius.circular(18),
-                    ),
-                    alignment: Alignment.center,
-                    child: AppSquareIcon(
-                      icon: Icons.local_shipping_outlined,
-                      status: supplier.status,
-                    ),
-                  ),
+                      width: 56,
+                      height: 56,
+                      decoration: BoxDecoration(
+                        color: cs.primaryContainer.withOpacity(0.4),
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                      alignment: Alignment.center,
+                      child: AppSquareIcon(
+                        icon: Icons.warehouse_outlined,
+                        status: warehouse.status,
+                      )),
                   const SizedBox(width: 16),
 
                   // Thông tin chính
@@ -227,27 +228,24 @@ class _SupplierListScreenState extends State<SupplierListScreen>
                           children: [
                             Expanded(
                               child: Text(
-                                supplier.name,
-                                style: theme.textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: cs.onSurface,
-                                ),
-                                maxLines: 1,
+                                warehouse.name,
+                                style: theme.textTheme.titleMedium
+                                    ?.copyWith(fontWeight: FontWeight.bold),
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
                             _buildStatusBadge(
-                                supplier.status, statusColor, theme),
+                                warehouse.status, statusColor, theme),
                           ],
                         ),
                         const SizedBox(height: 4),
                         Row(
                           children: [
-                            Icon(Icons.person_pin_rounded,
+                            Icon(Icons.qr_code_rounded,
                                 size: 14, color: cs.outline),
                             const SizedBox(width: 4),
                             Text(
-                              "Người liên hệ: ${supplier.contactPerson ?? 'N/A'}",
+                              "Mã: ${warehouse.code}",
                               style: theme.textTheme.bodySmall?.copyWith(
                                 color: cs.onSurfaceVariant,
                               ),
@@ -256,7 +254,7 @@ class _SupplierListScreenState extends State<SupplierListScreen>
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          supplier.phone ?? "Không có SĐT",
+                          warehouse.phone,
                           style: theme.textTheme.bodyMedium?.copyWith(
                             color: cs.primary,
                             fontWeight: FontWeight.bold,
@@ -277,15 +275,14 @@ class _SupplierListScreenState extends State<SupplierListScreen>
                 ),
               ),
 
-              // Địa chỉ + Nút gọi
+              // Địa chỉ + Chi nhánh
               Row(
                 children: [
                   Icon(Icons.location_on_rounded, size: 16, color: cs.outline),
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
-                      "${supplier.address ?? ''}, ${supplier.city ?? ''}"
-                          .trim(),
+                      "${warehouse.address}, ${warehouse.city}",
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: cs.outline,
                       ),
@@ -293,26 +290,17 @@ class _SupplierListScreenState extends State<SupplierListScreen>
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  if (supplier.phone != null)
-                    Material(
-                      color: Colors.green.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(10),
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(10),
-                        onTap: () {
-                          // TODO: Thêm url_launcher để gọi điện
-                          // launchUrl(Uri.parse('tel:${supplier.phone}'));
-                        },
-                        child: const Padding(
-                          padding: EdgeInsets.all(8.0),
-                          child: Icon(
-                            Icons.call_rounded,
-                            size: 18,
-                            color: Colors.green,
-                          ),
-                        ),
-                      ),
+                  const SizedBox(width: 8),
+                  Icon(Icons.business_rounded, size: 16, color: cs.outline),
+                  const SizedBox(width: 4),
+                  Text(
+                    warehouse.branchName,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: cs.outline,
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ],
               ),
             ],
@@ -346,10 +334,10 @@ class _SupplierListScreenState extends State<SupplierListScreen>
         padding: EdgeInsets.symmetric(vertical: 80),
         child: Column(
           children: [
-            Icon(Icons.local_shipping_outlined, size: 64, color: Colors.grey),
+            Icon(Icons.warehouse_outlined, size: 64, color: Colors.grey),
             SizedBox(height: 16),
             Text(
-              "Không tìm thấy nhà cung cấp nào",
+              "Không tìm thấy kho hàng nào",
               style: TextStyle(color: Colors.grey),
             ),
           ],

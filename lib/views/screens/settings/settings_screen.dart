@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:manager/core/extensions/l10n_extension.dart';
 import 'package:manager/core/utils/app_responsive.dart';
 import 'package:manager/viewmodels/auth_viewmodel.dart';
@@ -17,8 +18,46 @@ class SettingsScreen extends StatefulWidget {
   State<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-class _SettingsScreenState extends State<SettingsScreen> {
+class _SettingsScreenState extends State<SettingsScreen>
+    with SingleTickerProviderStateMixin {
   bool _isLoggingOut = false;
+  bool _isPageReady = false;
+  bool _isLoadingAction = false; // loading cho theme/language
+  late AnimationController _animController;
+  late Animation<double> _fadeAnim;
+  late Animation<Offset> _slideAnim;
+
+  @override
+  void initState() {
+    super.initState();
+    _initAnimations();
+    _preparePage();
+  }
+
+  void _initAnimations() {
+    _animController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 500),
+    );
+    _fadeAnim = CurvedAnimation(parent: _animController, curve: Curves.easeIn);
+    _slideAnim = Tween<Offset>(begin: const Offset(0, 0.05), end: Offset.zero)
+        .animate(CurvedAnimation(
+            parent: _animController, curve: Curves.easeOutCubic));
+  }
+
+  Future<void> _preparePage() async {
+    await Future.delayed(const Duration(milliseconds: 450));
+    if (mounted) {
+      setState(() => _isPageReady = true);
+      _animController.forward();
+    }
+  }
+
+  @override
+  void dispose() {
+    _animController.dispose();
+    super.dispose();
+  }
 
   Future<void> _onLogout() async {
     showPopup(
@@ -41,6 +80,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  // Hàm xử lý đổi theme có loading
+  Future<void> _onThemeToggle(bool value) async {
+    if (_isLoadingAction) return;
+    setState(() => _isLoadingAction = true);
+    await Future.delayed(const Duration(seconds: 1));
+    if (mounted) {
+      context.read<ThemeViewModel>().toggleTheme();
+      setState(() => _isLoadingAction = false);
+    }
+  }
+
+  // Hàm xử lý đổi ngôn ngữ có loading
+  Future<void> _onLanguageChange(String newLang) async {
+    if (_isLoadingAction) return;
+    setState(() => _isLoadingAction = true);
+    await Future.delayed(const Duration(seconds: 1));
+    if (mounted) {
+      context.read<LanguageViewModel>().setLanguage(newLang);
+      setState(() => _isLoadingAction = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final r = AppResponsive.of(context);
@@ -50,109 +111,114 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final isDark = themeVM.isDark;
     final langVM = context.watch<LanguageViewModel>();
     final currentLang = langVM.locale.languageCode;
+
+    if (!_isPageReady) {
+      return Scaffold(
+        backgroundColor: cs.surfaceContainerLowest,
+        body: Center(
+          child: LoadingAnimationWidget.dotsTriangle(
+            color: cs.primary,
+            size: 32,
+          ),
+        ),
+      );
+    }
+
     return Stack(
       children: [
         Scaffold(
           backgroundColor: cs.surfaceContainerLowest,
-          body: CustomScrollView(
-            slivers: [
-              AppSliverAppBar(
-                title: context.l10n.settings,
-                height: 80,
+          body: FadeTransition(
+            opacity: _fadeAnim,
+            child: SlideTransition(
+              position: _slideAnim,
+              child: CustomScrollView(
+                physics: const BouncingScrollPhysics(),
+                slivers: [
+                  AppSliverAppBar(
+                    title: context.l10n.settings,
+                    height: 80,
+                  ),
+                  SliverPadding(
+                    padding: EdgeInsets.fromLTRB(
+                      r.w(16),
+                      r.h(20),
+                      r.w(16),
+                      r.h(32),
+                    ),
+                    sliver: SliverList(
+                      delegate: SliverChildListDelegate([
+                        _SectionLabel(label: context.l10n.theme_text, r: r),
+                        SizedBox(height: r.h(8)),
+                        _SettingsCard(
+                          r: r,
+                          children: [
+                            _SwitchTile(
+                              r: r,
+                              icon: isDark
+                                  ? Icons.dark_mode_rounded
+                                  : Icons.light_mode_rounded,
+                              title: context.l10n.theme_text,
+                              value: isDark,
+                              onChanged: _onThemeToggle, // sửa ở đây
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: r.h(24)),
+                        _SectionLabel(label: context.l10n.language_text, r: r),
+                        SizedBox(height: r.h(8)),
+                        _SettingsCard(
+                          r: r,
+                          children: [
+                            _RadioTile(
+                              r: r,
+                              icon: Icons.language_rounded,
+                              title: context.l10n.vi,
+                              value: 'vi',
+                              groupValue: currentLang,
+                              onChanged: (value) =>
+                                  _onLanguageChange(value!), // sửa ở đây
+                            ),
+                            Divider(
+                              height: 1,
+                              indent: r.w(56),
+                              color: theme.colorScheme.outlineVariant,
+                            ),
+                            _RadioTile(
+                              r: r,
+                              icon: Icons.language_rounded,
+                              title: context.l10n.en,
+                              value: 'en',
+                              groupValue: currentLang,
+                              onChanged: (value) =>
+                                  _onLanguageChange(value!), // sửa ở đây
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: r.h(24)),
+                        _SectionLabel(label: 'Tài khoản', r: r),
+                        SizedBox(height: r.h(8)),
+                        _SettingsCard(
+                          r: r,
+                          children: [
+                            _ActionTile(
+                              r: r,
+                              icon: Icons.logout_rounded,
+                              title: context.l10n.logout_text,
+                              color: theme.colorScheme.error,
+                              onTap: _onLogout,
+                            ),
+                          ],
+                        ),
+                      ]),
+                    ),
+                  ),
+                ],
               ),
-              SliverPadding(
-                padding: EdgeInsets.fromLTRB(
-                  r.w(16),
-                  r.h(20),
-                  r.w(16),
-                  r.h(32),
-                ),
-                sliver: SliverList(
-                  delegate: SliverChildListDelegate([
-                    // ── Giao diện ──────────────────────────────────────────
-                    _SectionLabel(label: context.l10n.theme_text, r: r),
-                    SizedBox(height: r.h(8)),
-                    _SettingsCard(
-                      r: r,
-                      children: [
-                        _SwitchTile(
-                          r: r,
-                          icon: isDark
-                              ? Icons.dark_mode_rounded
-                              : Icons.light_mode_rounded,
-                          title: context.l10n.theme_text,
-                          value: isDark,
-                          onChanged: (value) {
-                            context.read<ThemeViewModel>().toggleTheme();
-                          },
-                        ),
-                      ],
-                    ),
-
-                    SizedBox(height: r.h(24)),
-
-                    // ── Ngôn ngữ ───────────────────────────────────────────
-                    _SectionLabel(label: context.l10n.language_text, r: r),
-                    SizedBox(height: r.h(8)),
-                    _SettingsCard(
-                      r: r,
-                      children: [
-                        _RadioTile(
-                          r: r,
-                          icon: Icons.language_rounded,
-                          title: context.l10n.vi,
-                          value: 'vi',
-                          groupValue: currentLang,
-                          onChanged: (value) {
-                            context
-                                .read<LanguageViewModel>()
-                                .setLanguage(value!);
-                          },
-                        ),
-                        Divider(
-                          height: 1,
-                          indent: r.w(56),
-                          color: theme.colorScheme.outlineVariant,
-                        ),
-                        _RadioTile(
-                          r: r,
-                          icon: Icons.language_rounded,
-                          title: context.l10n.en,
-                          value: 'en',
-                          groupValue: currentLang,
-                          onChanged: (value) {
-                            context
-                                .read<LanguageViewModel>()
-                                .setLanguage(value!);
-                          },
-                        ),
-                      ],
-                    ),
-
-                    SizedBox(height: r.h(24)),
-
-                    // ── Tài khoản ──────────────────────────────────────────
-                    _SectionLabel(label: 'Tài khoản', r: r),
-                    SizedBox(height: r.h(8)),
-                    _SettingsCard(
-                      r: r,
-                      children: [
-                        _ActionTile(
-                          r: r,
-                          icon: Icons.logout_rounded,
-                          title: context.l10n.logout_text,
-                          color: theme.colorScheme.error,
-                          onTap: _onLogout,
-                        ),
-                      ],
-                    ),
-                  ]),
-                ),
-              ),
-            ],
+            ),
           ),
         ),
-        if (_isLoggingOut)
+        if (_isLoggingOut || _isLoadingAction)
           Container(
             color: Colors.black.withOpacity(0.3),
             child: Center(
@@ -166,10 +232,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      CircularProgressIndicator(color: cs.primary),
+                      LoadingAnimationWidget.dotsTriangle(
+                        color: cs.primary,
+                        size: 32,
+                      ),
                       const SizedBox(height: 16),
                       Text(
-                        context.l10n.logout_text + '...',
+                        _isLoggingOut
+                            ? context.l10n.logout_text + '...'
+                            : 'Đang cập nhật...',
                         style: Theme.of(context).textTheme.bodyMedium,
                       ),
                     ],
@@ -183,8 +254,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 }
 
+// Các class con _SectionLabel, _SettingsCard, _SwitchTile, _RadioTile,
+// _ActionTile, _LeadingIcon giữ nguyên như cũ, không cần thay đổi.
+// (Code các class này đã có ở phiên bản trước)
+
 // ─────────────────────────────────────────────────────────────────────────────
-// Shared sub-widgets
+// Shared sub-widgets (giữ nguyên)
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _SectionLabel extends StatelessWidget {

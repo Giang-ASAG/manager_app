@@ -17,8 +17,8 @@ class AppBottomNav extends StatelessWidget {
   List<_NavItem> _items(BuildContext context) {
     return [
       _NavItem(icon: Icons.dashboard, label: context.l10n.dashboard_text),
-      _NavItem(icon: Icons.payments_sharp, label: context.l10n.invoice),
-      _NavItem(icon: Icons.inventory, label: 'Hình ảnh'),
+      _NavItem(icon: Icons.history, label: context.l10n.invoice),
+      _NavItem(icon: Icons.inventory, label: 'Mua hàng'),
       _NavItem(icon: Icons.settings, label: context.l10n.settings),
     ];
   }

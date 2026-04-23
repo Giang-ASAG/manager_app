@@ -1,11 +1,14 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:manager/core/extensions/l10n_extension.dart';
 import 'package:manager/core/router/app_routes.dart';
 import 'package:manager/data/models/category.dart';
 import 'package:manager/views/widgets/app_search_field.dart';
 import 'package:manager/views/widgets/ios_action_sheet.dart';
+import 'package:manager/views/widgets/shared/app_square_icon.dart';
+import 'package:manager/views/widgets/shared/app_summary_card.dart';
 import 'package:provider/provider.dart';
 import 'package:manager/viewmodels/categories_viewmodel.dart';
 import 'package:manager/views/widgets/app_sliver_app_bar.dart';
@@ -18,12 +21,20 @@ class CategoryListScreen extends StatefulWidget {
   State<CategoryListScreen> createState() => _CategoryListScreenState();
 }
 
-class _CategoryListScreenState extends State<CategoryListScreen> {
+class _CategoryListScreenState extends State<CategoryListScreen>
+    with SingleTickerProviderStateMixin {
   final TextEditingController searchController = TextEditingController();
+
+  bool _isPageReady = false;
+  late AnimationController _animController;
+  late Animation<double> _fadeAnim;
+  late Animation<Offset> _slideAnim;
 
   @override
   void initState() {
     super.initState();
+    _initAnimations();
+    _preparePage();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<CategoriesViewModel>().fetchCategories();
@@ -32,10 +43,34 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
     searchController.addListener(() => setState(() {}));
   }
 
+  void _initAnimations() {
+    _animController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 500),
+    );
+    _fadeAnim = CurvedAnimation(parent: _animController, curve: Curves.easeIn);
+    _slideAnim = Tween<Offset>(begin: const Offset(0, 0.05), end: Offset.zero)
+        .animate(CurvedAnimation(
+        parent: _animController, curve: Curves.easeOutCubic));
+  }
+
+  Future<void> _preparePage() async {
+    await Future.delayed(const Duration(milliseconds: 450));
+    if (mounted) {
+      setState(() => _isPageReady = true);
+      _animController.forward();
+    }
+  }
+
   @override
   void dispose() {
+    _animController.dispose();
     searchController.dispose();
     super.dispose();
+  }
+
+  Future<void> _onRefresh() async {
+    await context.read<CategoriesViewModel>().fetchCategories();
   }
 
   @override
@@ -45,52 +80,65 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
 
     return GestureDetector(
       onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
-      // 👈 fix keyboard
       child: Scaffold(
         backgroundColor: theme.scaffoldBackgroundColor,
         body: Consumer<CategoriesViewModel>(
           builder: (_, vm, __) {
-            if (vm.isLoading && vm.categories.isEmpty) {
-              return const Center(child: CircularProgressIndicator());
+            final bool showLoading =
+                !_isPageReady || (vm.isLoading && vm.categories.isEmpty);
+
+            if (showLoading) {
+              return Center(
+                child: LoadingAnimationWidget.dotsTriangle(
+                  color: cs.primary,
+                  size: 32,
+                ),
+              );
             }
 
             final query = searchController.text.trim().toLowerCase();
             final filtered = query.isEmpty
                 ? vm.categories
                 : vm.categories
-                    .where((c) => c.name.toLowerCase().contains(query))
-                    .toList();
+                .where((c) => c.name.toLowerCase().contains(query))
+                .toList();
 
-            return CustomScrollView(
-              physics: const BouncingScrollPhysics(),
-              slivers: [
-                AppSliverAppBar(
-                  title: context.l10n.category,
-                  showBackButton: true,
-                  height: 150,
-                  actions: [
-                    AppAddButton(
-                      onPressed: () => context.push(AppRoutes.categoryAdd),
+            return FadeTransition(
+              opacity: _fadeAnim,
+              child: SlideTransition(
+                position: _slideAnim,
+                child: CustomScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  slivers: [
+                    AppSliverAppBar(
+                      title: context.l10n.category,
+                      showBackButton: true,
+                      height: 150,
+                      actions: [
+                        AppAddButton(
+                          onPressed: () => context.push(AppRoutes.categoryAdd),
+                        ),
+                      ],
+                      bottom: AppSearchField(controller: searchController),
+                    ),
+                    CupertinoSliverRefreshControl(onRefresh: _onRefresh),
+                    SliverPadding(
+                      padding: const EdgeInsets.fromLTRB(16, 24, 16, 80),
+                      sliver: SliverList(
+                        delegate: SliverChildListDelegate([
+                          _buildSectionTitle(theme, filtered.length),
+                          const SizedBox(height: 12),
+                          if (filtered.isEmpty)
+                            _buildEmptyState()
+                          else
+                            ...filtered
+                                .map((c) => _buildCategoryCard(c, cs, theme)),
+                        ]),
+                      ),
                     ),
                   ],
-                  bottom: AppSearchField(controller: searchController),
                 ),
-                CupertinoSliverRefreshControl(onRefresh: _onRefresh),
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(16, 24, 16, 80),
-                  sliver: SliverList(
-                    delegate: SliverChildListDelegate([
-                      _buildSectionTitle(theme, filtered.length),
-                      const SizedBox(height: 12),
-                      if (filtered.isEmpty)
-                        _buildEmptyState()
-                      else
-                        ...filtered
-                            .map((c) => _buildCategoryCard(c, cs, theme)),
-                    ]),
-                  ),
-                ),
-              ],
+              ),
             );
           },
         ),
@@ -98,16 +146,12 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
     );
   }
 
-  Future<void> _onRefresh() async {
-    await context.read<CategoriesViewModel>().fetchCategories();
-  }
-
   Widget _buildSectionTitle(ThemeData theme, int count) {
-    return Text(
-      '${context.l10n.category_list} ($count)',
-      style: theme.textTheme.titleMedium?.copyWith(
-        fontWeight: FontWeight.bold,
-      ),
+    return AppSummaryCard(
+      label: context.l10n.category_list,
+      value: "$count",
+      icon: Icons.category_outlined,
+      color: Colors.orange,
     );
   }
 
@@ -144,20 +188,10 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
         ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
 
-        // ===== ICON =====
         leading: Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: isActive ? cs.primaryContainer : cs.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Icon(
-            isActive ? Icons.folder_rounded : Icons.folder_off_rounded,
-            color: isActive ? cs.onPrimaryContainer : cs.outline,
-          ),
+          child: AppSquareIcon(icon: Icons.category_rounded),
         ),
 
-        // ===== TITLE =====
         title: Row(
           children: [
             Expanded(
@@ -172,7 +206,6 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
           ],
         ),
 
-        // ===== DESCRIPTION =====
         subtitle: Text(
           category.description ?? 'Không có mô tả',
           maxLines: 2,

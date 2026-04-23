@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:manager/core/extensions/l10n_extension.dart';
 import 'package:manager/core/router/app_routes.dart';
 import 'package:manager/views/widgets/app_search_field.dart';
@@ -11,7 +12,6 @@ import 'package:manager/viewmodels/customer_viewmodel.dart';
 import 'package:manager/views/widgets/app_sliver_app_bar.dart';
 import 'package:manager/views/widgets/shared/app_summary_card.dart';
 import 'package:manager/views/widgets/shared/app_add_button.dart';
-import 'package:rflutter_alert/rflutter_alert.dart';
 
 class CustomerListScreen extends StatefulWidget {
   const CustomerListScreen({super.key});
@@ -20,22 +20,55 @@ class CustomerListScreen extends StatefulWidget {
   State<CustomerListScreen> createState() => _CustomerListScreenState();
 }
 
-class _CustomerListScreenState extends State<CustomerListScreen> {
+class _CustomerListScreenState extends State<CustomerListScreen>
+    with SingleTickerProviderStateMixin {
   final TextEditingController searchController = TextEditingController();
+
+  bool _isPageReady = false;
+  late AnimationController _animController;
+  late Animation<double> _fadeAnim;
+  late Animation<Offset> _slideAnim;
 
   @override
   void initState() {
     super.initState();
+    _initAnimations();
+    _preparePage();
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<CustomerViewmodel>().fetchCustomers();
     });
     searchController.addListener(() => setState(() {}));
   }
 
+  void _initAnimations() {
+    _animController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 500),
+    );
+    _fadeAnim = CurvedAnimation(parent: _animController, curve: Curves.easeIn);
+    _slideAnim = Tween<Offset>(begin: const Offset(0, 0.05), end: Offset.zero)
+        .animate(CurvedAnimation(
+        parent: _animController, curve: Curves.easeOutCubic));
+  }
+
+  Future<void> _preparePage() async {
+    await Future.delayed(const Duration(milliseconds: 450));
+    if (mounted) {
+      setState(() => _isPageReady = true);
+      _animController.forward();
+    }
+  }
+
   @override
   void dispose() {
+    _animController.dispose();
     searchController.dispose();
     super.dispose();
+  }
+
+  Future<void> _onRefresh() async {
+    await context.read<CustomerViewmodel>().fetchCustomers();
   }
 
   @override
@@ -49,63 +82,73 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
         backgroundColor: theme.scaffoldBackgroundColor,
         body: Consumer<CustomerViewmodel>(
           builder: (_, vm, __) {
-            if (vm.isLoading && vm.customers.isEmpty) {
-              return const Center(child: CircularProgressIndicator());
+            final bool showLoading =
+                !_isPageReady || (vm.isLoading && vm.customers.isEmpty);
+
+            if (showLoading) {
+              return Center(
+                child: LoadingAnimationWidget.dotsTriangle(
+                  color: cs.primary,
+                  size: 32,
+                ),
+              );
             }
 
             final query = searchController.text.trim().toLowerCase();
             final filtered = query.isEmpty
                 ? vm.customers
                 : vm.customers.where((c) {
-                    return c.name.toLowerCase().contains(query) ||
-                        (c.phone?.contains(query) ?? false) ||
-                        (c.email?.toLowerCase().contains(query) ?? false);
-                  }).toList();
+              return c.name.toLowerCase().contains(query) ||
+                  (c.phone?.contains(query) ?? false) ||
+                  (c.email?.toLowerCase().contains(query) ?? false);
+            }).toList();
 
-            return CustomScrollView(
-              physics: const BouncingScrollPhysics(),
-              slivers: [
-                AppSliverAppBar(
-                  title: context.l10n.customer,
-                  showBackButton: true,
-                  height: 150,
-                  actions: [
-                    AppAddButton(
-                      onPressed: () => context.push(AppRoutes.customerAdd),
+            return FadeTransition(
+              opacity: _fadeAnim,
+              child: SlideTransition(
+                position: _slideAnim,
+                child: CustomScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  slivers: [
+                    AppSliverAppBar(
+                      title: context.l10n.customer,
+                      showBackButton: true,
+                      height: 150,
+                      actions: [
+                        AppAddButton(
+                          onPressed: () => context.push(AppRoutes.customerAdd),
+                        ),
+                      ],
+                      bottom: AppSearchField(controller: searchController),
+                    ),
+                    CupertinoSliverRefreshControl(onRefresh: _onRefresh),
+                    SliverPadding(
+                      padding: const EdgeInsets.fromLTRB(16, 24, 16, 80),
+                      sliver: SliverList(
+                        delegate: SliverChildListDelegate([
+                          AppSummaryCard(
+                            label: context.l10n.customer_list,
+                            value: "${filtered.length}",
+                            icon: Icons.people_alt_outlined,
+                            color: cs.primary,
+                          ),
+                          const SizedBox(height: 10),
+                          if (filtered.isEmpty)
+                            _buildEmptyState()
+                          else
+                            ...filtered
+                                .map((c) => _buildCustomerCard(c, cs, theme)),
+                        ]),
+                      ),
                     ),
                   ],
-                  bottom: AppSearchField(controller: searchController),
                 ),
-                CupertinoSliverRefreshControl(onRefresh: _onRefresh),
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(16, 24, 16, 80),
-                  sliver: SliverList(
-                    delegate: SliverChildListDelegate([
-                      AppSummaryCard(
-                        label: context.l10n.customer_list,
-                        value: "${filtered.length}",
-                        icon: Icons.people_alt_outlined,
-                        color: cs.primary,
-                      ),
-                      const SizedBox(height: 10),
-                      if (filtered.isEmpty)
-                        _buildEmptyState()
-                      else
-                        ...filtered
-                            .map((c) => _buildCustomerCard(c, cs, theme)),
-                    ]),
-                  ),
-                ),
-              ],
+              ),
             );
           },
         ),
       ),
     );
-  }
-
-  Future<void> _onRefresh() async {
-    await context.read<CustomerViewmodel>().fetchCustomers();
   }
 
   Widget _buildCustomerCard(

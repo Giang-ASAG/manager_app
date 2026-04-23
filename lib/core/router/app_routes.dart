@@ -38,4 +38,10 @@ class AppRoutes {
   static const branchAdd = "/branches/add";
   static const branchDetail = "/branches/detail/:id";
   static const branchEdit = "/branches/edit/:id";
+
+  // Warehouses
+  static const warehouses = "/warehouses";
+  static const warehouseAdd = "/warehouses/add";
+  static const warehouseDetail = "/warehouses/detail/:id";
+  static const warehouseEdit = "/warehouses/edit/:id";
 }

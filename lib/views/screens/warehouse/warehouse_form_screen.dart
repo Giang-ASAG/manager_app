@@ -1,41 +1,38 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:manager/core/extensions/l10n_extension.dart';
-import 'package:manager/core/utils/app_responsive.dart';
-import 'package:manager/data/models/supplier.dart';
-import 'package:manager/viewmodels/supplier_viewmodel.dart';
-import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import 'package:loading_animation_widget/loading_animation_widget.dart'; // Thêm import
-
+import 'package:loading_animation_widget/loading_animation_widget.dart'; // Thêm import này
+import 'package:manager/core/utils/app_responsive.dart';
+import 'package:manager/data/models/warehouse.dart';
+import 'package:manager/viewmodels/warehouse_viewmodel.dart';
 import 'package:manager/views/widgets/app_button.dart';
 import 'package:manager/views/widgets/app_sliver_app_bar.dart';
 import 'package:manager/views/widgets/app_snackbar.dart';
+import 'package:provider/provider.dart';
 
-class SupplierFormScreen extends StatefulWidget {
-  final Supplier? supplier;
+class WarehouseFormScreen extends StatefulWidget {
+  final Warehouse? warehouse;
 
-  const SupplierFormScreen({super.key, this.supplier});
+  const WarehouseFormScreen({super.key, this.warehouse});
 
   @override
-  State<SupplierFormScreen> createState() => _SupplierFormScreenState();
+  State<WarehouseFormScreen> createState() => _WarehouseFormScreenState();
 }
 
-class _SupplierFormScreenState extends State<SupplierFormScreen>
+class _WarehouseFormScreenState extends State<WarehouseFormScreen>
     with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
 
-  // Controllers
-  final _nameController = TextEditingController();
-  final _contactPersonController = TextEditingController();
-  final _emailController = TextEditingController();
-  final _phoneController = TextEditingController();
-  final _addressController = TextEditingController();
-  final _cityController = TextEditingController();
+  late TextEditingController codeCtrl;
+  late TextEditingController nameCtrl;
+  late TextEditingController phoneCtrl;
+  late TextEditingController addressCtrl;
+  late TextEditingController cityCtrl;
 
+  String selectedStatus = 'active';
   bool _isPageReady = false;
 
-  bool get _isEditMode => widget.supplier != null;
+  bool get _isEditMode => widget.warehouse != null;
 
   late AnimationController _animController;
   late Animation<double> _fadeAnim;
@@ -54,15 +51,15 @@ class _SupplierFormScreenState extends State<SupplierFormScreen>
         .animate(CurvedAnimation(
             parent: _animController, curve: Curves.easeOutCubic));
 
-    if (_isEditMode) {
-      final s = widget.supplier!;
-      _nameController.text = s.name ?? '';
-      _contactPersonController.text = s.contactPerson ?? '';
-      _emailController.text = s.email ?? '';
-      _phoneController.text = s.phone ?? '';
-      _addressController.text = s.address ?? '';
-      _cityController.text = s.city ?? '';
-    }
+    codeCtrl = TextEditingController(text: widget.warehouse?.code ?? '');
+    nameCtrl = TextEditingController(text: widget.warehouse?.name ?? '');
+    phoneCtrl = TextEditingController(text: widget.warehouse?.phone ?? '');
+    addressCtrl = TextEditingController(text: widget.warehouse?.address ?? '');
+    cityCtrl = TextEditingController(text: widget.warehouse?.city ?? '');
+
+    final status = (widget.warehouse?.status ?? 'active').toLowerCase();
+    selectedStatus =
+        (status == 'active' || status == 'inactive') ? status : 'active';
 
     _preparePage();
   }
@@ -78,45 +75,41 @@ class _SupplierFormScreenState extends State<SupplierFormScreen>
   @override
   void dispose() {
     _animController.dispose();
-    _nameController.dispose();
-    _contactPersonController.dispose();
-    _emailController.dispose();
-    _phoneController.dispose();
-    _addressController.dispose();
-    _cityController.dispose();
+    codeCtrl.dispose();
+    nameCtrl.dispose();
+    phoneCtrl.dispose();
+    addressCtrl.dispose();
+    cityCtrl.dispose();
     super.dispose();
   }
 
-  Future<void> _saveSupplier() async {
+  Future<void> _submit() async {
     if (_formKey.currentState!.validate()) {
-      final supplierVM = context.read<SupplierViewmodel>();
-      final supplierData = Supplier(
-        id: _isEditMode ? widget.supplier!.id : 0,
-        name: _nameController.text.trim(),
-        contactPerson: _contactPersonController.text.trim(),
-        email: _emailController.text.trim(),
-        phone: _phoneController.text.trim(),
-        address: _addressController.text.trim(),
-        city: _cityController.text.trim(),
+      final vm = context.read<WarehouseViewModel>();
+      final warehouseData = Warehouse(
+        id: widget.warehouse?.id ?? 0,
+        branchId: widget.warehouse?.branchId ?? 0,
+        branchName: widget.warehouse?.branchName ?? '',
+        code: codeCtrl.text.trim(),
+        name: nameCtrl.text.trim(),
+        phone: phoneCtrl.text.trim(),
+        address: addressCtrl.text.trim(),
+        city: cityCtrl.text.trim(),
+        status: selectedStatus,
+        createdAt: widget.warehouse?.createdAt ?? DateTime.now(),
       );
 
       bool success = _isEditMode
-          ? await supplierVM.updateSupplier(widget.supplier!.id!, supplierData)
-          : await supplierVM.createSupplier(supplierData);
+          ? await vm.updateWarehouse(widget.warehouse!.id, warehouseData)
+          : await vm.createWarehouse(warehouseData);
 
       if (mounted) {
         if (success) {
-          AppSnackbar.showSuccess(
-            context,
-            _isEditMode
-                ? context.l10n.action_success(
-                    context.l10n.common_edit, context.l10n.supplier)
-                : context.l10n.action_success(
-                    context.l10n.common_add, context.l10n.supplier),
-          );
+          AppSnackbar.showSuccess(context,
+              _isEditMode ? 'Cập nhật thành công' : 'Thêm mới thành công');
           context.pop();
         } else {
-          AppSnackbar.showError(context, supplierVM.error ?? 'Lỗi hệ thống');
+          AppSnackbar.showError(context, vm.error ?? 'Lỗi hệ thống');
         }
       }
     }
@@ -125,7 +118,7 @@ class _SupplierFormScreenState extends State<SupplierFormScreen>
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final supplierVM = context.watch<SupplierViewmodel>();
+    final warehouseVM = context.watch<WarehouseViewModel>();
 
     return Scaffold(
       backgroundColor: cs.surfaceContainerLowest,
@@ -144,9 +137,8 @@ class _SupplierFormScreenState extends State<SupplierFormScreen>
                   physics: const BouncingScrollPhysics(),
                   slivers: [
                     AppSliverAppBar(
-                      title: _isEditMode
-                          ? context.l10n.supplier_edit
-                          : context.l10n.supplier_add,
+                      title:
+                          _isEditMode ? 'Chỉnh sửa kho hàng' : 'Thêm kho hàng',
                       showBackButton: true,
                       height: 80,
                     ),
@@ -165,20 +157,24 @@ class _SupplierFormScreenState extends State<SupplierFormScreen>
                                   icon: Icons.badge_rounded,
                                   children: [
                                     _buildTextField(context,
-                                        controller: _nameController,
-                                        label: 'Tên nhà cung cấp',
-                                        hint: 'Công ty Thép Hòa Phát',
-                                        icon: Icons.business_rounded,
+                                        controller: codeCtrl,
+                                        label: 'Mã kho hàng',
+                                        hint: 'Ví dụ: WH001',
+                                        icon: Icons.qr_code_2_rounded,
+                                        isRequired: true,
+                                        validator: (v) => v!.trim().isEmpty
+                                            ? 'Vui lòng nhập mã'
+                                            : null),
+                                    SizedBox(height: context.rh(14)),
+                                    _buildTextField(context,
+                                        controller: nameCtrl,
+                                        label: 'Tên kho hàng',
+                                        hint: 'Ví dụ: Kho Tân Bình',
+                                        icon: Icons.warehouse_rounded,
                                         isRequired: true,
                                         validator: (v) => v!.trim().isEmpty
                                             ? 'Vui lòng nhập tên'
                                             : null),
-                                    SizedBox(height: context.rh(14)),
-                                    _buildTextField(context,
-                                        controller: _contactPersonController,
-                                        label: 'Người liên hệ',
-                                        hint: 'Tên nhân viên đại diện',
-                                        icon: Icons.person_pin_rounded),
                                   ],
                                 ),
                                 SizedBox(height: context.rh(16)),
@@ -187,58 +183,57 @@ class _SupplierFormScreenState extends State<SupplierFormScreen>
                                   title: "Thông tin liên lạc",
                                   icon: Icons.contact_phone_rounded,
                                   children: [
-                                    _buildTextField(
-                                      context,
-                                      controller: _emailController,
-                                      label: 'Email',
-                                      hint: 'sales@supplier.com',
-                                      icon: Icons.email_outlined,
-                                      isRequired: true,
-                                      keyboardType: TextInputType.emailAddress,
-                                      validator: (v) {
-                                        final val = v?.trim() ?? '';
-                                        if (val.isEmpty)
-                                          return 'Vui lòng nhập email';
-                                        if (!RegExp(
-                                                r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
-                                            .hasMatch(val))
-                                          return 'Email không hợp lệ';
-                                        return null;
-                                      },
-                                    ),
-                                    SizedBox(height: context.rh(14)),
                                     _buildTextField(context,
-                                        controller: _phoneController,
-                                        label: 'Số điện thoại',
+                                        controller: phoneCtrl,
+                                        label: 'Điện thoại',
                                         hint: '028xxxxxxxx',
                                         icon: Icons.phone_android_rounded,
-                                        keyboardType: TextInputType.phone),
+                                        isRequired: true,
+                                        keyboardType: TextInputType.phone,
+                                        validator: (v) => v!.trim().isEmpty
+                                            ? 'Vui lòng nhập số điện thoại'
+                                            : null),
                                   ],
                                 ),
                                 SizedBox(height: context.rh(16)),
                                 _buildSection(
                                   context,
-                                  title: "Vị trí địa chỉ",
+                                  title: "Vị trí địa lý",
                                   icon: Icons.location_on_rounded,
                                   children: [
                                     _buildTextField(context,
-                                        controller: _addressController,
-                                        label: 'Địa chỉ trụ sở',
-                                        hint: 'Số nhà, đường...',
-                                        icon: Icons.home_outlined),
+                                        controller: addressCtrl,
+                                        label: 'Địa chỉ chi tiết',
+                                        hint: 'KCN, số nhà, đường...',
+                                        icon: Icons.home_outlined,
+                                        isRequired: true,
+                                        validator: (v) => v!.trim().isEmpty
+                                            ? 'Vui lòng nhập địa chỉ'
+                                            : null),
                                     SizedBox(height: context.rh(14)),
                                     _buildTextField(context,
-                                        controller: _cityController,
+                                        controller: cityCtrl,
                                         label: 'Tỉnh/Thành phố',
                                         hint: 'Bình Dương',
-                                        icon: Icons.map_outlined),
+                                        icon: Icons.map_outlined,
+                                        isRequired: true,
+                                        validator: (v) => v!.trim().isEmpty
+                                            ? 'Bắt buộc'
+                                            : null),
                                   ],
                                 ),
+                                SizedBox(height: context.rh(16)),
+                                _buildSection(
+                                  context,
+                                  title: "Cài đặt trạng thái",
+                                  icon: Icons.settings_power_rounded,
+                                  children: [_buildStatusToggle(context)],
+                                ),
                                 if (_isEditMode &&
-                                    widget.supplier?.createdAt != null) ...[
+                                    widget.warehouse?.createdAt != null) ...[
                                   SizedBox(height: context.rh(24)),
                                   Text(
-                                    "Ngày tạo: ${widget.supplier!.createdAt!}",
+                                    "Ngày tạo: ${DateFormat('dd/MM/yyyy').format(widget.warehouse!.createdAt!)}",
                                     style: Theme.of(context)
                                         .textTheme
                                         .bodySmall
@@ -257,7 +252,7 @@ class _SupplierFormScreenState extends State<SupplierFormScreen>
                 ),
               ),
             ),
-      bottomSheet: _isPageReady ? _buildBottomSave(context, supplierVM) : null,
+      bottomSheet: _isPageReady ? _buildBottomSave(context, warehouseVM) : null,
     );
   }
 
@@ -291,18 +286,20 @@ class _SupplierFormScreenState extends State<SupplierFormScreen>
                 Container(
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
-                      color: cs.tertiaryContainer,
-                      borderRadius: BorderRadius.circular(8)),
+                    color: cs.tertiaryContainer,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                   child: Icon(icon, size: context.sp(15), color: cs.tertiary),
                 ),
                 SizedBox(width: context.rw(10)),
                 Text(
                   title.toUpperCase(),
                   style: TextStyle(
-                      fontSize: context.sp(11),
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 0.8,
-                      color: cs.tertiary),
+                    fontSize: context.sp(11),
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.8,
+                    color: cs.tertiary,
+                  ),
                 ),
               ],
             ),
@@ -377,7 +374,59 @@ class _SupplierFormScreenState extends State<SupplierFormScreen>
     );
   }
 
-  Widget _buildBottomSave(BuildContext context, SupplierViewmodel vm) {
+  Widget _buildStatusToggle(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final isActive = selectedStatus == 'active';
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 250),
+      padding: EdgeInsets.symmetric(
+          horizontal: context.rw(14), vertical: context.rh(10)),
+      decoration: BoxDecoration(
+        color: isActive
+            ? Colors.green.withOpacity(0.07)
+            : cs.error.withOpacity(0.06),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+            color: isActive
+                ? Colors.green.withOpacity(0.3)
+                : cs.error.withOpacity(0.3)),
+      ),
+      child: Row(
+        children: [
+          Icon(isActive ? Icons.check_circle_rounded : Icons.cancel_rounded,
+              color: isActive ? Colors.green : cs.error, size: context.sp(22)),
+          SizedBox(width: context.rw(12)),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(isActive ? "Đang hoạt động" : "Ngừng hoạt động",
+                    style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: context.sp(14),
+                        color: isActive ? Colors.green.shade700 : cs.error)),
+                Text(
+                    isActive
+                        ? "Kho đang tiếp nhận & xuất hàng"
+                        : "Kho tạm thời đóng cửa",
+                    style:
+                        TextStyle(fontSize: context.sp(11), color: cs.outline)),
+              ],
+            ),
+          ),
+          Switch(
+            value: isActive,
+            onChanged: (val) =>
+                setState(() => selectedStatus = val ? 'active' : 'inactive'),
+            activeColor: Colors.green,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBottomSave(BuildContext context, WarehouseViewModel vm) {
     final cs = Theme.of(context).colorScheme;
     return Container(
       decoration: BoxDecoration(
@@ -396,9 +445,9 @@ class _SupplierFormScreenState extends State<SupplierFormScreen>
           padding: EdgeInsets.fromLTRB(
               context.rw(16), context.rh(12), context.rw(16), context.rh(12)),
           child: AppButton(
-            text: context.l10n.supplier_save,
+            text: _isEditMode ? 'Cập nhật kho hàng' : 'Thêm mới',
             isLoading: vm.isLoading,
-            onPressed: _saveSupplier,
+            onPressed: _submit,
           ),
         ),
       ),
