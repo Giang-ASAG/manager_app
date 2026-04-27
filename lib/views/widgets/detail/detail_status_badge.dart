@@ -165,7 +165,7 @@ class DetailInfoSection extends StatelessWidget {
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.bold,
-              color: cs.primary,
+              color: cs.tertiary,
               letterSpacing: 0.5,
             ),
           ),
@@ -230,12 +230,12 @@ class DetailHeroCard extends StatelessWidget {
           Container(
             padding: EdgeInsets.all(context.rw(12)),
             decoration: BoxDecoration(
-              color: (iconBgColor ?? cs.primaryContainer).withOpacity(0.4),
+              color: (iconBgColor ?? cs.tertiaryContainer).withOpacity(0.4),
               shape: BoxShape.circle,
             ),
             child: Icon(
               icon,
-              color: iconColor ?? cs.primary,
+              color: iconColor ?? cs.tertiary,
               size: 28,
             ),
           ),
@@ -368,7 +368,7 @@ class _DetailScaffoldState extends State<DetailScaffold>
       return Scaffold(
         body: Center(
           child: LoadingAnimationWidget.dotsTriangle(
-            color: cs.primary,
+            color: cs.tertiary,
             size: 32,
           ),
         ),

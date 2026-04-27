@@ -63,7 +63,7 @@ class AppSliverAppBar extends StatelessWidget {
                           onPressed: () => Navigator.of(context).pop(),
                           icon: Icon(
                             Icons.arrow_back_rounded,
-                            color: colorScheme.onPrimary,
+                            color: colorScheme.onTertiary,
                             size: context.sp(28),
                           ),
                         ),
@@ -75,7 +75,7 @@ class AppSliverAppBar extends StatelessWidget {
                           child: Text(
                             title,
                             style: TextStyle(
-                              color: colorScheme.onPrimary,
+                              color: colorScheme.onTertiary,
                               fontSize: context.sp(22),
                               fontWeight: FontWeight.w800,
                             ),
@@ -85,7 +85,7 @@ class AppSliverAppBar extends StatelessWidget {
                       if (actions != null)
                         IconTheme(
                           data: IconThemeData(
-                            color: colorScheme.onPrimary,
+                            color: colorScheme.onTertiary,
                           ),
                           child: Row(children: actions!),
                         ),
@@ -97,7 +97,12 @@ class AppSliverAppBar extends StatelessWidget {
                       data: theme.copyWith(
                         inputDecorationTheme: InputDecorationTheme(
                           filled: true,
-                          fillColor: Colors.white.withOpacity(0.18),
+                          fillColor: Theme.of(context)
+                              .colorScheme
+                              .surfaceContainerLowest
+                              .withOpacity(0.95),
+                          // Hoặc dùng màu phù hợp với theme
+
                           hintStyle: TextStyle(
                             color: Colors.white.withOpacity(0.7),
                             fontSize: context.sp(14),
@@ -105,16 +110,16 @@ class AppSliverAppBar extends StatelessWidget {
                           ),
                           prefixIconColor: Colors.white.withOpacity(0.85),
                           suffixIconColor: Colors.white.withOpacity(0.7),
+
                           contentPadding: EdgeInsets.symmetric(
                             horizontal: context.rw(16),
                             vertical: context.rh(12),
                           ),
+
+                          // === PHẦN QUAN TRỌNG: Fix viền đen ở góc ===
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(context.rr(20)),
-                            borderSide: BorderSide(
-                              color: Colors.white.withOpacity(0.3),
-                              width: 1,
-                            ),
+                            borderSide: BorderSide.none, // ← Quan trọng
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(context.rr(20)),
@@ -126,9 +131,19 @@ class AppSliverAppBar extends StatelessWidget {
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(context.rr(20)),
                             borderSide: BorderSide(
-                              color: Colors.white.withOpacity(0.7),
+                             color: Colors.white.withOpacity(0.7),
                               width: 1.5,
                             ),
+                          ),
+                          errorBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(context.rr(20)),
+                            borderSide:
+                                BorderSide(color: Colors.redAccent, width: 1.2),
+                          ),
+                          focusedErrorBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(context.rr(20)),
+                            borderSide:
+                                BorderSide(color: Colors.redAccent, width: 1.5),
                           ),
                         ),
                       ),

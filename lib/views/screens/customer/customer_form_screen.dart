@@ -11,7 +11,6 @@ import 'package:intl/intl.dart';
 
 import 'package:manager/views/widgets/app_button.dart';
 import 'package:manager/views/widgets/app_sliver_app_bar.dart';
-import 'package:manager/views/widgets/app_snackbar.dart';
 
 class CustomerFormScreen extends StatefulWidget {
   final Customer? customer;

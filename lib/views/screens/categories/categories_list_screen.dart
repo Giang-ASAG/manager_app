@@ -51,7 +51,7 @@ class _CategoryListScreenState extends State<CategoryListScreen>
     _fadeAnim = CurvedAnimation(parent: _animController, curve: Curves.easeIn);
     _slideAnim = Tween<Offset>(begin: const Offset(0, 0.05), end: Offset.zero)
         .animate(CurvedAnimation(
-        parent: _animController, curve: Curves.easeOutCubic));
+            parent: _animController, curve: Curves.easeOutCubic));
   }
 
   Future<void> _preparePage() async {
@@ -100,8 +100,8 @@ class _CategoryListScreenState extends State<CategoryListScreen>
             final filtered = query.isEmpty
                 ? vm.categories
                 : vm.categories
-                .where((c) => c.name.toLowerCase().contains(query))
-                .toList();
+                    .where((c) => c.name.toLowerCase().contains(query))
+                    .toList();
 
             return FadeTransition(
               opacity: _fadeAnim,
@@ -183,15 +183,15 @@ class _CategoryListScreenState extends State<CategoryListScreen>
                 .read<CategoriesViewModel>()
                 .deleteCategory(category.id);
           },
-          onEdit: () {},
+          onEdit: () {
+            context.push(AppRoutes.categoryEdit, extra: category);
+          },
           onDetail: () {},
         ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-
         leading: Container(
           child: AppSquareIcon(icon: Icons.category_rounded),
         ),
-
         title: Row(
           children: [
             Expanded(
@@ -205,7 +205,6 @@ class _CategoryListScreenState extends State<CategoryListScreen>
             _buildStatusBadge(theme, statusColor, isActive),
           ],
         ),
-
         subtitle: Text(
           category.description ?? 'Không có mô tả',
           maxLines: 2,

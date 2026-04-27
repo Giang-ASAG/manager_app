@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:manager/core/extensions/l10n_extension.dart';
+import 'package:manager/core/extensions/string_extension.dart';
 import 'package:manager/core/router/app_routes.dart';
 import 'package:manager/core/utils/app_responsive.dart';
 import 'package:manager/data/models/purchase.dart';
 import 'package:manager/viewmodels/purchase_viewmodel.dart';
 import 'package:manager/views/widgets/action_bottom_buttons.dart';
-import 'package:manager/views/widgets/app_snackbar.dart';
+import 'package:manager/views/widgets/alerts/top_alert.dart';
 import 'package:manager/views/widgets/custom_popup.dart';
 
 import 'package:manager/views/widgets/detail/detail_status_badge.dart';
@@ -36,12 +38,25 @@ class _PurchaseDetailScreenState extends State<PurchaseDetailScreen> {
       final success =
           await context.read<PurchaseViewmodel>().deletePurchase(purchase.id);
       if (mounted && success) {
-        AppSnackbar.showSuccess(
-            context, 'Đã xóa đơn nhập ${purchase.purchaseNumber}');
+        TopAlert.success(
+          context,
+          context.l10n.action_success(
+            context.l10n.common_delete,
+            'đơn nhập hàng',
+          ),
+        );
         context.pop();
       }
     } catch (e) {
-      if (mounted) AppSnackbar.showError(context, 'Lỗi: $e');
+      if (mounted) {
+        TopAlert.error(
+          context,
+          context.l10n.action_failed(
+            context.l10n.common_delete,
+            'đơn nhập hàng',
+          ),
+        );
+      }
     } finally {
       if (mounted) setState(() => _isDeleting = false);
     }
@@ -53,21 +68,23 @@ class _PurchaseDetailScreenState extends State<PurchaseDetailScreen> {
       selector: (_, vm) => vm.purchaseData,
       builder: (context, purchase, _) {
         return DetailScaffold(
-          appBarTitle: 'Chi tiết đơn nhập',
+          appBarTitle: context.l10n.purchase_detail,
           onRefresh: _fetchData,
           bottomBar: purchase == null
               ? null
               : ActionBottomButtons(
                   isDeleting: _isDeleting,
-                  editText: 'Chỉnh sửa',
-                  deleteText: 'Xóa đơn',
+                  editText: context.l10n.purchase_edit.capitalizeFirstOnly(),
+                  deleteText:
+                      context.l10n.purchase_delete.capitalizeFirstOnly(),
                   onDelete: () => showPopup(
                     context: context,
-                    title: 'Xác nhận xóa',
+                    title: context.l10n.common_warning,
                     content:
-                        'Bạn có chắc muốn xóa đơn nhập ${purchase.purchaseNumber}?',
+                        context.l10n.confirmDeleteItem(purchase.purchaseNumber),
                     type: AlertType.warning,
                     onOkPressed: () => _onConfirmDelete(purchase),
+                    onCancelPressed: () {},
                   ),
                   onEdit: () =>
                       context.push(AppRoutes.purchaseEdit, extra: purchase),
@@ -205,7 +222,7 @@ class _HeaderSection extends StatelessWidget {
       padding: EdgeInsets.all(context.rw(20)),
       decoration: BoxDecoration(
         gradient:
-            LinearGradient(colors: [cs.primary, cs.primary.withOpacity(0.8)]),
+            LinearGradient(colors: [cs.tertiary, cs.primary.withOpacity(0.8)]),
         borderRadius: BorderRadius.circular(context.rr(24)),
       ),
       child: Column(

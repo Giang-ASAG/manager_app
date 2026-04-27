@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:manager/core/extensions/l10n_extension.dart';
@@ -16,7 +17,7 @@ import 'package:manager/viewmodels/supplier_viewmodel.dart';
 import 'package:manager/viewmodels/warehouse_viewmodel.dart';
 import 'package:manager/views/widgets/app_button.dart';
 import 'package:manager/views/widgets/app_sliver_app_bar.dart';
-import 'package:manager/views/widgets/app_snackbar.dart';
+import 'package:manager/views/widgets/alerts/top_alert.dart';
 import 'package:provider/provider.dart';
 
 class _LineItem {
@@ -41,10 +42,30 @@ const List<String> _kStatuses = [
   'Quá Hạn',
 ];
 
+// Map từ API status sang UI status
+const Map<String, String> _statusMap = {
+  'Draft': 'Nháp',
+  'Ordered': 'Đã Đặt',
+  'Received': 'Đã Nhận',
+  'Paid': 'Đã Thanh Toán',
+  'Overdue': 'Quá Hạn',
+};
+
+// Map ngược lại
+const Map<String, String> _statusMapReverse = {
+  'Nháp': 'Draft',
+  'Đã Đặt': 'Ordered',
+  'Đã Nhận': 'Received',
+  'Đã Thanh Toán': 'Paid',
+  'Quá Hạn': 'Overdue',
+};
+
 // ====================== MAIN SCREEN ======================
 
 class PurchaseFormScreen extends StatefulWidget {
-  const PurchaseFormScreen({super.key});
+  final Purchase? purchase;
+
+  const PurchaseFormScreen({super.key, this.purchase});
 
   @override
   State<PurchaseFormScreen> createState() => _PurchaseFormScreenState();
@@ -60,6 +81,9 @@ class _PurchaseFormScreenState extends State<PurchaseFormScreen>
   late AnimationController _animController;
   late Animation<double> _fadeAnim;
   late Animation<Offset> _slideAnim;
+
+  // Edit mode
+  late bool _isEditMode;
 
   // Form state
   DateTime _purchaseDate = DateTime.now();
@@ -78,9 +102,13 @@ class _PurchaseFormScreenState extends State<PurchaseFormScreen>
   // Computed values
   double get _subtotal =>
       _lineItems.fold(0.0, (sum, item) => sum + item.lineTotal);
+
   double get _total => (_subtotal - _discount).clamp(0.0, double.infinity);
+
   double get _change => (_paymentMade - _total).clamp(0.0, double.infinity);
+
   double get _debt => (_total - _paymentMade).clamp(0.0, double.infinity);
+
   bool get _hasDebt => _paymentMade > 0 && _paymentMade < _total;
 
   // ── Lifecycle ────────────────────────────────────────
@@ -89,12 +117,13 @@ class _PurchaseFormScreenState extends State<PurchaseFormScreen>
   void initState() {
     super.initState();
 
+    _isEditMode = widget.purchase != null;
+
     _animController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 500),
     );
-    _fadeAnim =
-        CurvedAnimation(parent: _animController, curve: Curves.easeIn);
+    _fadeAnim = CurvedAnimation(parent: _animController, curve: Curves.easeIn);
     _slideAnim = Tween<Offset>(
       begin: const Offset(0, 0.05),
       end: Offset.zero,
@@ -106,9 +135,26 @@ class _PurchaseFormScreenState extends State<PurchaseFormScreen>
       context.read<SupplierViewmodel>().fetchSuppliers();
       context.read<WarehouseViewModel>().fetchWarehouses();
       context.read<PurchaseViewmodel>().fetchPurchases();
+
+      if (_isEditMode) {
+        _initializeFromPurchase();
+      }
     });
 
     _preparePage();
+  }
+
+  void _initializeFromPurchase() {
+    if (widget.purchase == null) return;
+    final purchase = widget.purchase!;
+
+    _purchaseDate = purchase.date;
+    // Map từ API status sang UI status
+    _status = _statusMap[purchase.status] ?? 'Nháp';
+    _discount = purchase.discount;
+    _paymentMade = purchase.paymentMade;
+    _discountController.text = _discount.toStringAsFixed(0);
+    _paymentController.text = _paymentMade.toStringAsFixed(0);
   }
 
   Future<void> _preparePage() async {
@@ -141,8 +187,8 @@ class _PurchaseFormScreenState extends State<PurchaseFormScreen>
 
   void _addProduct(Product product) {
     setState(() {
-      _lineItems.add(
-          _LineItem(product: product, unitPrice: product.purchasePrice));
+      _lineItems
+          .add(_LineItem(product: product, unitPrice: product.purchasePrice));
     });
   }
 
@@ -154,15 +200,15 @@ class _PurchaseFormScreenState extends State<PurchaseFormScreen>
     if (!_formKey.currentState!.validate()) return;
 
     if (_lineItems.isEmpty) {
-      AppSnackbar.showInfo(context, 'Vui lòng chọn ít nhất một sản phẩm');
+      TopAlert.info(context, 'Vui lòng chọn ít nhất một sản phẩm');
       return;
     }
     if (_selectedSupplier == null) {
-      AppSnackbar.showInfo(context, 'Vui lòng chọn nhà cung cấp');
+      TopAlert.info(context, 'Vui lòng chọn nhà cung cấp');
       return;
     }
     if (_selectedWarehouse == null) {
-      AppSnackbar.showInfo(context, 'Vui lòng chọn kho hàng');
+      TopAlert.info(context, 'Vui lòng chọn kho hàng');
       return;
     }
 
@@ -191,54 +237,87 @@ class _PurchaseFormScreenState extends State<PurchaseFormScreen>
         .asMap()
         .entries
         .map((entry) => PurchaseItem(
-      id: entry.key + 1,
-      productId: entry.value.product.id,
-      productName: entry.value.product.name,
-      unitPrice: entry.value.unitPrice,
-      qty: entry.value.qty,
-      unit: entry.value.product.unit,
-      billableQty: entry.value.qty,
-      unitCost: entry.value.unitPrice,
-      lineTotal: entry.value.lineTotal,
-    ))
+              id: entry.key + 1,
+              productId: entry.value.product.id,
+              productName: entry.value.product.name,
+              unitPrice: entry.value.unitPrice,
+              qty: entry.value.qty,
+              unit: entry.value.product.unit,
+              billableQty: entry.value.qty,
+              unitCost: entry.value.unitPrice,
+              lineTotal: entry.value.lineTotal,
+            ))
         .toList();
 
     final purchaseVM = context.read<PurchaseViewmodel>();
-    final newPurchase = Purchase(
-      id: 0,
-      purchaseNumber: 'PO-00000${purchaseVM.purchases.length + 1}',
-      supplierId: _selectedSupplier!.id ?? 0,
-      supplierName: _selectedSupplier!.name,
-      warehouseId: _selectedWarehouse!.id,
-      warehouseName: _selectedWarehouse!.name,
-      date: _purchaseDate,
-      subtotal: _subtotal,
-      discount: _discount,
-      total: _total,
-      amount: _total,
-      paymentMade: _paymentMade,
-      balanceDue: _debt,
-      status: finalStatus,
-      createdAt: DateTime.now(),
-      payments: payList,
-      items: purchaseItems,
-    );
 
-    final success = await purchaseVM.createPurchase(newPurchase);
+    bool success;
+    if (_isEditMode) {
+      // Update mode
+      final updatedPurchase = Purchase(
+        id: widget.purchase!.id,
+        purchaseNumber: widget.purchase!.purchaseNumber,
+        supplierId: widget.purchase!.supplierId,
+        supplierName: widget.purchase!.supplierName,
+        warehouseId: widget.purchase!.warehouseId,
+        warehouseName: widget.purchase!.warehouseName,
+        date: _purchaseDate,
+        subtotal: _subtotal,
+        discount: _discount,
+        total: _total,
+        amount: _total,
+        paymentMade: _paymentMade,
+        balanceDue: _debt,
+        status: finalStatus,
+        createdAt: widget.purchase!.createdAt,
+        items: purchaseItems,
+        payments: payList,
+      );
+      success =
+          await purchaseVM.updatePurchase(updatedPurchase.id, updatedPurchase);
+    } else {
+      // Create mode
+      final newPurchase = Purchase(
+        id: 0,
+        purchaseNumber: 'PO-00000${purchaseVM.purchases.length + 1}',
+        supplierId: _selectedSupplier!.id ?? 0,
+        supplierName: _selectedSupplier!.name,
+        warehouseId: _selectedWarehouse!.id,
+        warehouseName: _selectedWarehouse!.name,
+        date: _purchaseDate,
+        subtotal: _subtotal,
+        discount: _discount,
+        total: _total,
+        amount: _total,
+        paymentMade: _paymentMade,
+        balanceDue: _debt,
+        status: finalStatus,
+        createdAt: DateTime.now(),
+        payments: payList,
+        items: purchaseItems,
+      );
+      success = await purchaseVM.createPurchase(newPurchase);
+    }
 
     if (mounted) {
       if (success) {
-        AppSnackbar.showSuccess(
+        TopAlert.success(
           context,
-          context.l10n.action_success(
-              context.l10n.common_add, 'đơn nhập hàng'),
+          _isEditMode
+              ? context.l10n
+                  .action_success(context.l10n.common_update, 'đơn nhập hàng')
+              : context.l10n
+                  .action_success(context.l10n.common_add, 'đơn nhập hàng'),
         );
-        Navigator.pop(context);
+        context.pop();
       } else {
-        AppSnackbar.showError(
+        TopAlert.error(
           context,
-          context.l10n.action_failed(
-              context.l10n.common_add, 'đơn nhập hàng'),
+          _isEditMode
+              ? context.l10n
+                  .action_failed(context.l10n.common_update, 'đơn nhập hàng')
+              : context.l10n
+                  .action_failed(context.l10n.common_add, 'đơn nhập hàng'),
         );
       }
     }
@@ -256,224 +335,221 @@ class _PurchaseFormScreenState extends State<PurchaseFormScreen>
 
     return Scaffold(
       backgroundColor: cs.surfaceContainerLowest,
-      bottomSheet:
-      _isPageReady ? _buildBottomSave(context, purchaseVM) : null,
+      bottomSheet: _isPageReady ? _buildBottomSave(context, purchaseVM) : null,
       body: !_isPageReady
           ? Center(
-        child: LoadingAnimationWidget.dotsTriangle(
-          color: cs.primary,
-          size: context.rw(32),
-        ),
-      )
+              child: LoadingAnimationWidget.dotsTriangle(
+                color: cs.primary,
+                size: context.rw(32),
+              ),
+            )
           : FadeTransition(
-        opacity: _fadeAnim,
-        child: SlideTransition(
-          position: _slideAnim,
-          child: Form(
-            key: _formKey,
-            child: CustomScrollView(
-              physics: const BouncingScrollPhysics(),
-              slivers: [
-                AppSliverAppBar(
-                  title: 'Tạo Đơn Nhập Hàng',
-                  showBackButton: true,
-                  height: 80,
-                ),
-                SliverPadding(
-                  padding: EdgeInsets.fromLTRB(
-                    context.rw(16),
-                    context.rh(24),
-                    context.rw(16),
-                    context.rh(120),
-                  ),
-                  sliver: SliverToBoxAdapter(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // ── Thông tin đơn nhập ─────────────────────
-                        _buildSection(
-                          context,
-                          title: 'Thông Tin Đơn Nhập',
-                          icon: Icons.receipt_long_rounded,
-                          children: [
-                            _buildReadonlyField(
-                              context,
-                              label: 'Số Đơn Nhập',
-                              value:
-                              'PO-00000${purchaseVM.purchases.length + 1}',
-                              icon: Icons.tag_rounded,
-                            ),
-                            SizedBox(height: context.rh(14)),
-                            Row(
-                              children: [
-                                Expanded(
-                                    child: _buildDateField(context)),
-                                SizedBox(width: context.rw(12)),
-                                Expanded(
-                                  child: _buildDropdownField(
-                                    context,
-                                    label: 'Trạng Thái',
-                                    icon: Icons.flag_rounded,
-                                    value: _status,
-                                    items: _kStatuses,
-                                    onChanged: (v) => setState(
-                                            () => _status = v ?? 'Nháp'),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
+              opacity: _fadeAnim,
+              child: SlideTransition(
+                position: _slideAnim,
+                child: Form(
+                  key: _formKey,
+                  child: CustomScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    slivers: [
+                      AppSliverAppBar(
+                        title: _isEditMode
+                            ? context.l10n.purchase_edit
+                            : context.l10n.purchase_add,
+                        showBackButton: true,
+                        height: 80,
+                      ),
+                      SliverPadding(
+                        padding: EdgeInsets.fromLTRB(
+                          context.rw(16),
+                          context.rh(24),
+                          context.rw(16),
+                          context.rh(120),
                         ),
-                        SizedBox(height: context.rh(16)),
-
-                        // ── Nhà cung cấp & Kho hàng ────────────────
-                        _buildSection(
-                          context,
-                          title: 'Nhà Cung Cấp & Kho Hàng',
-                          icon: Icons.storefront_rounded,
-                          trailing: TextButton(
-                            onPressed: () {
-                              // TODO: Navigate to add supplier
-                            },
-                            style: TextButton.styleFrom(
-                              padding: EdgeInsets.zero,
-                              minimumSize: Size.zero,
-                              tapTargetSize:
-                              MaterialTapTargetSize.shrinkWrap,
-                            ),
-                            child: Text(
-                              'Thêm mới',
-                              style: TextStyle(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .primary,
-                                fontSize: context.sp(12),
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                          children: [
-                            _buildSupplierDropdown(
-                                context, supplierVM.suppliers),
-                            SizedBox(height: context.rh(14)),
-                            _buildWarehouseDropdown(
-                                context, warehouseVM.warehouses),
-                            if (_selectedSupplier == null ||
-                                _selectedWarehouse == null) ...[
-                              SizedBox(height: context.rh(8)),
-                              Row(
+                        sliver: SliverToBoxAdapter(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // ── Thông tin đơn nhập ─────────────────────
+                              _buildSection(
+                                context,
+                                title: 'Thông Tin Đơn Nhập',
+                                icon: Icons.receipt_long_rounded,
                                 children: [
-                                  Icon(Icons.info_outline_rounded,
-                                      size: context.sp(13),
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .outline),
-                                  SizedBox(width: context.rw(4)),
-                                  Text(
-                                    'Bắt buộc phải chọn nhà cung cấp và kho hàng',
-                                    style: TextStyle(
-                                      fontSize: context.sp(11.5),
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .outline,
-                                    ),
+                                  _buildReadonlyField(
+                                    context,
+                                    label: 'Số Đơn Nhập',
+                                    value:
+                                        'PO-00000${purchaseVM.purchases.length + 1}',
+                                    icon: Icons.tag_rounded,
+                                  ),
+                                  SizedBox(height: context.rh(14)),
+                                  Row(
+                                    children: [
+                                      Expanded(child: _buildDateField(context)),
+                                      SizedBox(width: context.rw(12)),
+                                      Expanded(
+                                        child: _buildDropdownField(
+                                          context,
+                                          label: 'Trạng Thái',
+                                          icon: Icons.flag_rounded,
+                                          value: _status,
+                                          items: _kStatuses,
+                                          onChanged: (v) => setState(
+                                              () => _status = v ?? 'Nháp'),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ],
                               ),
+                              SizedBox(height: context.rh(16)),
+
+                              // ── Nhà cung cấp & Kho hàng ────────────────
+                              _buildSection(
+                                context,
+                                title: 'Nhà Cung Cấp & Kho Hàng',
+                                icon: Icons.storefront_rounded,
+                                trailing: TextButton(
+                                  onPressed: () {
+                                    // TODO: Navigate to add supplier
+                                  },
+                                  style: TextButton.styleFrom(
+                                    padding: EdgeInsets.zero,
+                                    minimumSize: Size.zero,
+                                    tapTargetSize:
+                                        MaterialTapTargetSize.shrinkWrap,
+                                  ),
+                                  child: Text(
+                                    'Thêm mới',
+                                    style: TextStyle(
+                                      color:
+                                          Theme.of(context).colorScheme.primary,
+                                      fontSize: context.sp(12),
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                                children: [
+                                  _buildSupplierDropdown(
+                                      context, supplierVM.suppliers),
+                                  SizedBox(height: context.rh(14)),
+                                  _buildWarehouseDropdown(
+                                      context, warehouseVM.warehouses),
+                                  if (_selectedSupplier == null ||
+                                      _selectedWarehouse == null) ...[
+                                    SizedBox(height: context.rh(8)),
+                                    Row(
+                                      children: [
+                                        Icon(Icons.info_outline_rounded,
+                                            size: context.sp(13),
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .outline),
+                                        SizedBox(width: context.rw(4)),
+                                        Text(
+                                          'Bắt buộc phải chọn nhà cung cấp và kho hàng',
+                                          style: TextStyle(
+                                            fontSize: context.sp(11.5),
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .outline,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ],
+                              ),
+                              SizedBox(height: context.rh(16)),
+
+                              // ── Sản phẩm ───────────────────────────────
+                              _buildSection(
+                                context,
+                                title: 'Sản Phẩm',
+                                icon: Icons.inventory_2_rounded,
+                                trailing: FilledButton.tonalIcon(
+                                  onPressed: () => _showProductPicker(
+                                    productVM.products,
+                                    _lineItems.map((e) => e.product.id).toSet(),
+                                  ),
+                                  icon: Icon(Icons.add_rounded,
+                                      size: context.sp(16)),
+                                  label: const Text('Thêm'),
+                                  style: FilledButton.styleFrom(
+                                    padding: EdgeInsets.symmetric(
+                                        horizontal: context.rw(12),
+                                        vertical: context.rh(6)),
+                                    textStyle: TextStyle(
+                                        fontSize: context.sp(12),
+                                        fontWeight: FontWeight.w600),
+                                    visualDensity: VisualDensity.compact,
+                                  ),
+                                ),
+                                children: [
+                                  _buildProductList(context),
+                                ],
+                              ),
+                              SizedBox(height: context.rh(16)),
+
+                              // ── Tổng kết ───────────────────────────────
+                              _buildSection(
+                                context,
+                                title: 'Tổng Kết',
+                                icon: Icons.calculate_rounded,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: _buildTextField(
+                                          context,
+                                          controller: _discountController,
+                                          label: 'Giảm Giá (VNĐ)',
+                                          hint: '0',
+                                          icon: Icons.discount_outlined,
+                                          keyboardType: TextInputType.number,
+                                          inputFormatters: [
+                                            FilteringTextInputFormatter
+                                                .digitsOnly
+                                          ],
+                                          onChanged: (v) => setState(() =>
+                                              _discount =
+                                                  double.tryParse(v) ?? 0),
+                                        ),
+                                      ),
+                                      SizedBox(width: context.rw(12)),
+                                      Expanded(
+                                        child: _buildTextField(
+                                          context,
+                                          controller: _paymentController,
+                                          label: 'Đã Thanh Toán (VNĐ)',
+                                          hint: '0',
+                                          icon: Icons.payments_outlined,
+                                          keyboardType: TextInputType.number,
+                                          inputFormatters: [
+                                            FilteringTextInputFormatter
+                                                .digitsOnly
+                                          ],
+                                          onChanged: (v) => setState(() =>
+                                              _paymentMade =
+                                                  double.tryParse(v) ?? 0),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  SizedBox(height: context.rh(16)),
+                                  _buildSummaryBlock(context),
+                                ],
+                              ),
                             ],
-                          ],
-                        ),
-                        SizedBox(height: context.rh(16)),
-
-                        // ── Sản phẩm ───────────────────────────────
-                        _buildSection(
-                          context,
-                          title: 'Sản Phẩm',
-                          icon: Icons.inventory_2_rounded,
-                          trailing: FilledButton.tonalIcon(
-                            onPressed: () => _showProductPicker(
-                              productVM.products,
-                              _lineItems
-                                  .map((e) => e.product.id)
-                                  .toSet(),
-                            ),
-                            icon: Icon(Icons.add_rounded,
-                                size: context.sp(16)),
-                            label: const Text('Thêm'),
-                            style: FilledButton.styleFrom(
-                              padding: EdgeInsets.symmetric(
-                                  horizontal: context.rw(12),
-                                  vertical: context.rh(6)),
-                              textStyle: TextStyle(
-                                  fontSize: context.sp(12),
-                                  fontWeight: FontWeight.w600),
-                              visualDensity: VisualDensity.compact,
-                            ),
                           ),
-                          children: [
-                            _buildProductList(context),
-                          ],
                         ),
-                        SizedBox(height: context.rh(16)),
-
-                        // ── Tổng kết ───────────────────────────────
-                        _buildSection(
-                          context,
-                          title: 'Tổng Kết',
-                          icon: Icons.calculate_rounded,
-                          children: [
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: _buildTextField(
-                                    context,
-                                    controller: _discountController,
-                                    label: 'Giảm Giá (VNĐ)',
-                                    hint: '0',
-                                    icon: Icons.discount_outlined,
-                                    keyboardType: TextInputType.number,
-                                    inputFormatters: [
-                                      FilteringTextInputFormatter
-                                          .digitsOnly
-                                    ],
-                                    onChanged: (v) => setState(() =>
-                                    _discount =
-                                        double.tryParse(v) ?? 0),
-                                  ),
-                                ),
-                                SizedBox(width: context.rw(12)),
-                                Expanded(
-                                  child: _buildTextField(
-                                    context,
-                                    controller: _paymentController,
-                                    label: 'Đã Thanh Toán (VNĐ)',
-                                    hint: '0',
-                                    icon: Icons.payments_outlined,
-                                    keyboardType: TextInputType.number,
-                                    inputFormatters: [
-                                      FilteringTextInputFormatter
-                                          .digitsOnly
-                                    ],
-                                    onChanged: (v) => setState(() =>
-                                    _paymentMade =
-                                        double.tryParse(v) ?? 0),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            SizedBox(height: context.rh(16)),
-                            _buildSummaryBlock(context),
-                          ],
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
-              ],
+              ),
             ),
-          ),
-        ),
-      ),
     );
   }
 
@@ -482,12 +558,12 @@ class _PurchaseFormScreenState extends State<PurchaseFormScreen>
   // ──────────────────────────────────────────────────────────────────
 
   Widget _buildSection(
-      BuildContext context, {
-        required String title,
-        required IconData icon,
-        required List<Widget> children,
-        Widget? trailing,
-      }) {
+    BuildContext context, {
+    required String title,
+    required IconData icon,
+    required List<Widget> children,
+    Widget? trailing,
+  }) {
     final cs = Theme.of(context).colorScheme;
     return Container(
       decoration: BoxDecoration(
@@ -506,8 +582,8 @@ class _PurchaseFormScreenState extends State<PurchaseFormScreen>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: EdgeInsets.fromLTRB(context.rw(16), context.rh(14),
-                context.rw(16), context.rh(4)),
+            padding: EdgeInsets.fromLTRB(
+                context.rw(16), context.rh(14), context.rw(16), context.rh(4)),
             child: Row(
               children: [
                 Container(
@@ -516,8 +592,7 @@ class _PurchaseFormScreenState extends State<PurchaseFormScreen>
                     color: cs.tertiaryContainer,
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Icon(icon,
-                      size: context.sp(15), color: cs.tertiary),
+                  child: Icon(icon, size: context.sp(15), color: cs.tertiary),
                 ),
                 SizedBox(width: context.rw(10)),
                 Expanded(
@@ -555,17 +630,17 @@ class _PurchaseFormScreenState extends State<PurchaseFormScreen>
   // ──────────────────────────────────────────────────────────────────
 
   Widget _buildTextField(
-      BuildContext context, {
-        required TextEditingController controller,
-        required String label,
-        required String hint,
-        required IconData icon,
-        TextInputType keyboardType = TextInputType.text,
-        List<TextInputFormatter>? inputFormatters,
-        String? Function(String?)? validator,
-        ValueChanged<String>? onChanged,
-        bool isRequired = false,
-      }) {
+    BuildContext context, {
+    required TextEditingController controller,
+    required String label,
+    required String hint,
+    required IconData icon,
+    TextInputType keyboardType = TextInputType.text,
+    List<TextInputFormatter>? inputFormatters,
+    String? Function(String?)? validator,
+    ValueChanged<String>? onChanged,
+    bool isRequired = false,
+  }) {
     final cs = Theme.of(context).colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -583,8 +658,7 @@ class _PurchaseFormScreenState extends State<PurchaseFormScreen>
             if (isRequired) ...[
               const SizedBox(width: 3),
               Text('*',
-                  style: TextStyle(
-                      color: cs.error, fontSize: context.sp(13))),
+                  style: TextStyle(color: cs.error, fontSize: context.sp(13))),
             ],
           ],
         ),
@@ -602,14 +676,12 @@ class _PurchaseFormScreenState extends State<PurchaseFormScreen>
               color: cs.outline.withOpacity(0.5),
               fontSize: context.sp(14),
             ),
-            prefixIcon:
-            Icon(icon, color: cs.tertiary, size: context.sp(19)),
+            prefixIcon: Icon(icon, color: cs.tertiary, size: context.sp(19)),
             filled: true,
             fillColor: cs.surfaceContainerLowest,
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
-              borderSide:
-              BorderSide(color: cs.outlineVariant.withOpacity(0.6)),
+              borderSide: BorderSide(color: cs.outlineVariant.withOpacity(0.6)),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
@@ -638,11 +710,11 @@ class _PurchaseFormScreenState extends State<PurchaseFormScreen>
   // ──────────────────────────────────────────────────────────────────
 
   Widget _buildReadonlyField(
-      BuildContext context, {
-        required String label,
-        required String value,
-        required IconData icon,
-      }) {
+    BuildContext context, {
+    required String label,
+    required String value,
+    required IconData icon,
+  }) {
     final cs = Theme.of(context).colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -662,8 +734,7 @@ class _PurchaseFormScreenState extends State<PurchaseFormScreen>
               horizontal: context.rw(14), vertical: context.rh(13)),
           decoration: BoxDecoration(
             color: cs.surfaceContainerHighest.withOpacity(0.6),
-            border:
-            Border.all(color: cs.outlineVariant.withOpacity(0.6)),
+            border: Border.all(color: cs.outlineVariant.withOpacity(0.6)),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Row(
@@ -710,8 +781,7 @@ class _PurchaseFormScreenState extends State<PurchaseFormScreen>
                 horizontal: context.rw(14), vertical: context.rh(13)),
             decoration: BoxDecoration(
               color: cs.surfaceContainerLowest,
-              border: Border.all(
-                  color: cs.outlineVariant.withOpacity(0.6)),
+              border: Border.all(color: cs.outlineVariant.withOpacity(0.6)),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Row(
@@ -738,13 +808,13 @@ class _PurchaseFormScreenState extends State<PurchaseFormScreen>
   // ──────────────────────────────────────────────────────────────────
 
   Widget _buildDropdownField(
-      BuildContext context, {
-        required String label,
-        required IconData icon,
-        required String value,
-        required List<String> items,
-        required ValueChanged<String?> onChanged,
-      }) {
+    BuildContext context, {
+    required String label,
+    required IconData icon,
+    required String value,
+    required List<String> items,
+    required ValueChanged<String?> onChanged,
+  }) {
     final cs = Theme.of(context).colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -762,14 +832,12 @@ class _PurchaseFormScreenState extends State<PurchaseFormScreen>
           value: value,
           isExpanded: true,
           decoration: InputDecoration(
-            prefixIcon:
-            Icon(icon, color: cs.tertiary, size: context.sp(19)),
+            prefixIcon: Icon(icon, color: cs.tertiary, size: context.sp(19)),
             filled: true,
             fillColor: cs.surfaceContainerLowest,
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
-              borderSide:
-              BorderSide(color: cs.outlineVariant.withOpacity(0.6)),
+              borderSide: BorderSide(color: cs.outlineVariant.withOpacity(0.6)),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
@@ -780,14 +848,12 @@ class _PurchaseFormScreenState extends State<PurchaseFormScreen>
               vertical: context.rh(13),
             ),
           ),
-          style: TextStyle(
-              fontSize: context.sp(14), color: cs.onSurface),
+          style: TextStyle(fontSize: context.sp(14), color: cs.onSurface),
           items: items
               .map((e) => DropdownMenuItem(
-            value: e,
-            child: Text(e,
-                style: TextStyle(fontSize: context.sp(13))),
-          ))
+                    value: e,
+                    child: Text(e, style: TextStyle(fontSize: context.sp(13))),
+                  ))
               .toList(),
           onChanged: onChanged,
         ),
@@ -820,8 +886,7 @@ class _PurchaseFormScreenState extends State<PurchaseFormScreen>
           hint: Text(
             'Chọn nhà cung cấp',
             style: TextStyle(
-                color: cs.outline.withOpacity(0.5),
-                fontSize: context.sp(14)),
+                color: cs.outline.withOpacity(0.5), fontSize: context.sp(14)),
           ),
           decoration: InputDecoration(
             prefixIcon: Icon(Icons.business_rounded,
@@ -830,8 +895,7 @@ class _PurchaseFormScreenState extends State<PurchaseFormScreen>
             fillColor: cs.surfaceContainerLowest,
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
-              borderSide:
-              BorderSide(color: cs.outlineVariant.withOpacity(0.6)),
+              borderSide: BorderSide(color: cs.outlineVariant.withOpacity(0.6)),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
@@ -842,17 +906,16 @@ class _PurchaseFormScreenState extends State<PurchaseFormScreen>
               vertical: context.rh(13),
             ),
           ),
-          style: TextStyle(
-              fontSize: context.sp(14), color: cs.onSurface),
+          style: TextStyle(fontSize: context.sp(14), color: cs.onSurface),
           items: [null, ...suppliers]
               .map((s) => DropdownMenuItem<Supplier?>(
-            value: s,
-            child: Text(
-              s?.name ?? 'Chọn nhà cung cấp',
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontSize: context.sp(13)),
-            ),
-          ))
+                    value: s,
+                    child: Text(
+                      s?.name ?? 'Chọn nhà cung cấp',
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontSize: context.sp(13)),
+                    ),
+                  ))
               .toList(),
           onChanged: (s) => setState(() => _selectedSupplier = s),
         ),
@@ -885,8 +948,7 @@ class _PurchaseFormScreenState extends State<PurchaseFormScreen>
           hint: Text(
             'Chọn kho hàng',
             style: TextStyle(
-                color: cs.outline.withOpacity(0.5),
-                fontSize: context.sp(14)),
+                color: cs.outline.withOpacity(0.5), fontSize: context.sp(14)),
           ),
           decoration: InputDecoration(
             prefixIcon: Icon(Icons.warehouse_rounded,
@@ -895,8 +957,7 @@ class _PurchaseFormScreenState extends State<PurchaseFormScreen>
             fillColor: cs.surfaceContainerLowest,
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
-              borderSide:
-              BorderSide(color: cs.outlineVariant.withOpacity(0.6)),
+              borderSide: BorderSide(color: cs.outlineVariant.withOpacity(0.6)),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
@@ -907,17 +968,16 @@ class _PurchaseFormScreenState extends State<PurchaseFormScreen>
               vertical: context.rh(13),
             ),
           ),
-          style: TextStyle(
-              fontSize: context.sp(14), color: cs.onSurface),
+          style: TextStyle(fontSize: context.sp(14), color: cs.onSurface),
           items: [null, ...warehouses]
               .map((w) => DropdownMenuItem<Warehouse?>(
-            value: w,
-            child: Text(
-              w?.name ?? 'Chọn kho hàng',
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontSize: context.sp(13)),
-            ),
-          ))
+                    value: w,
+                    child: Text(
+                      w?.name ?? 'Chọn kho hàng',
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontSize: context.sp(13)),
+                    ),
+                  ))
               .toList(),
           onChanged: (w) => setState(() => _selectedWarehouse = w),
         ),
@@ -1001,16 +1061,15 @@ class _PurchaseFormScreenState extends State<PurchaseFormScreen>
         ),
         SizedBox(height: context.rh(4)),
         ..._lineItems.asMap().entries.map((entry) => _LineItemRow(
-          key: ValueKey(entry.value.product.id),
-          item: entry.value,
-          currency: _currencyFormatter,
-          cs: cs,
-          onQtyChanged: (qty) =>
-              setState(() => entry.value.qty = qty),
-          onPriceChanged: (price) =>
-              setState(() => entry.value.unitPrice = price),
-          onDelete: () => _removeItem(entry.key),
-        )),
+              key: ValueKey(entry.value.product.id),
+              item: entry.value,
+              currency: _currencyFormatter,
+              cs: cs,
+              onQtyChanged: (qty) => setState(() => entry.value.qty = qty),
+              onPriceChanged: (price) =>
+                  setState(() => entry.value.unitPrice = price),
+              onDelete: () => _removeItem(entry.key),
+            )),
       ],
     );
   }
@@ -1100,8 +1159,7 @@ class _PurchaseFormScreenState extends State<PurchaseFormScreen>
                       style: TextStyle(
                         fontWeight: FontWeight.w700,
                         fontSize: context.sp(14),
-                        color:
-                        isDebtState ? cs.error : Colors.green.shade700,
+                        color: isDebtState ? cs.error : Colors.green.shade700,
                       ),
                     ),
                   ],
@@ -1131,8 +1189,8 @@ class _PurchaseFormScreenState extends State<PurchaseFormScreen>
     return Container(
       decoration: BoxDecoration(
         color: cs.surface,
-        border: Border(
-            top: BorderSide(color: cs.outlineVariant.withOpacity(0.3))),
+        border:
+            Border(top: BorderSide(color: cs.outlineVariant.withOpacity(0.3))),
         boxShadow: [
           BoxShadow(
             color: cs.shadow.withOpacity(0.06),
@@ -1143,10 +1201,10 @@ class _PurchaseFormScreenState extends State<PurchaseFormScreen>
       ),
       child: SafeArea(
         child: Padding(
-          padding: EdgeInsets.fromLTRB(context.rw(16), context.rh(12),
-              context.rw(16), context.rh(12)),
+          padding: EdgeInsets.fromLTRB(
+              context.rw(16), context.rh(12), context.rw(16), context.rh(12)),
           child: AppButton(
-            text: 'Lưu Đơn Nhập',
+            text: context.l10n.purchase_save,
             isLoading: vm.isLoading,
             onPressed: _submitForm,
           ),
@@ -1187,10 +1245,9 @@ class _LineItemRowState extends State<_LineItemRow> {
   @override
   void initState() {
     super.initState();
-    _qtyCtrl =
-        TextEditingController(text: widget.item.qty.toStringAsFixed(0));
-    _priceCtrl = TextEditingController(
-        text: widget.item.unitPrice.toStringAsFixed(0));
+    _qtyCtrl = TextEditingController(text: widget.item.qty.toStringAsFixed(0));
+    _priceCtrl =
+        TextEditingController(text: widget.item.unitPrice.toStringAsFixed(0));
   }
 
   @override
@@ -1199,8 +1256,7 @@ class _LineItemRowState extends State<_LineItemRow> {
     if (widget.item.qty != (double.tryParse(_qtyCtrl.text) ?? 0)) {
       _qtyCtrl.text = widget.item.qty.toStringAsFixed(0);
     }
-    if (widget.item.unitPrice !=
-        (double.tryParse(_priceCtrl.text) ?? 0)) {
+    if (widget.item.unitPrice != (double.tryParse(_priceCtrl.text) ?? 0)) {
       _priceCtrl.text = widget.item.unitPrice.toStringAsFixed(0);
     }
   }
@@ -1234,8 +1290,7 @@ class _LineItemRowState extends State<_LineItemRow> {
                 Text(
                   item.product.name,
                   style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: context.sp(13.5)),
+                      fontWeight: FontWeight.w600, fontSize: context.sp(13.5)),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -1322,22 +1377,22 @@ class _ProductPickerSheetState extends State<_ProductPickerSheet> {
   String _selectedCategory = 'Tất cả';
 
   List<String> get _categories => [
-    'Tất cả',
-    ...widget.products
-        .map((p) => p.category ?? '')
-        .where((c) => c.isNotEmpty)
-        .toSet()
-        .toList()
-      ..sort(),
-  ];
+        'Tất cả',
+        ...widget.products
+            .map((p) => p.category ?? '')
+            .where((c) => c.isNotEmpty)
+            .toSet()
+            .toList()
+          ..sort(),
+      ];
 
   List<Product> get _filteredProducts => widget.products.where((p) {
-    final matchCat = _selectedCategory == 'Tất cả' ||
-        p.category == _selectedCategory;
-    final matchSearch = _searchText.isEmpty ||
-        p.name.toLowerCase().contains(_searchText.toLowerCase());
-    return matchCat && matchSearch;
-  }).toList();
+        final matchCat =
+            _selectedCategory == 'Tất cả' || p.category == _selectedCategory;
+        final matchSearch = _searchText.isEmpty ||
+            p.name.toLowerCase().contains(_searchText.toLowerCase());
+        return matchCat && matchSearch;
+      }).toList();
 
   @override
   Widget build(BuildContext context) {
@@ -1351,8 +1406,7 @@ class _ProductPickerSheetState extends State<_ProductPickerSheet> {
       builder: (context, scrollController) => Container(
         decoration: BoxDecoration(
           color: cs.surface,
-          borderRadius:
-          const BorderRadius.vertical(top: Radius.circular(24)),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         ),
         child: Column(
           children: [
@@ -1386,19 +1440,15 @@ class _ProductPickerSheetState extends State<_ProductPickerSheet> {
               ),
             ),
             Padding(
-              padding:
-              EdgeInsets.symmetric(horizontal: context.rw(16)),
+              padding: EdgeInsets.symmetric(horizontal: context.rw(16)),
               child: TextField(
                 decoration: InputDecoration(
                   hintText: 'Tìm sản phẩm...',
-                  prefixIcon: Icon(Icons.search_rounded,
-                      size: context.sp(20)),
+                  prefixIcon: Icon(Icons.search_rounded, size: context.sp(20)),
                   border: OutlineInputBorder(
-                      borderRadius:
-                      BorderRadius.circular(context.rr(12))),
+                      borderRadius: BorderRadius.circular(context.rr(12))),
                   contentPadding: EdgeInsets.symmetric(
-                      horizontal: context.rw(12),
-                      vertical: context.rh(10)),
+                      horizontal: context.rw(12), vertical: context.rh(10)),
                   isDense: true,
                 ),
                 onChanged: (v) => setState(() => _searchText = v),
@@ -1409,21 +1459,17 @@ class _ProductPickerSheetState extends State<_ProductPickerSheet> {
               height: context.rh(38),
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
-                padding: EdgeInsets.symmetric(
-                    horizontal: context.rw(16)),
+                padding: EdgeInsets.symmetric(horizontal: context.rw(16)),
                 itemCount: _categories.length,
-                separatorBuilder: (_, __) =>
-                    SizedBox(width: context.rw(8)),
+                separatorBuilder: (_, __) => SizedBox(width: context.rw(8)),
                 itemBuilder: (_, i) {
                   final cat = _categories[i];
                   return ChoiceChip(
-                    label: Text(cat,
-                        style: TextStyle(fontSize: context.sp(12))),
+                    label:
+                        Text(cat, style: TextStyle(fontSize: context.sp(12))),
                     selected: _selectedCategory == cat,
-                    onSelected: (_) =>
-                        setState(() => _selectedCategory = cat),
-                    materialTapTargetSize:
-                    MaterialTapTargetSize.shrinkWrap,
+                    onSelected: (_) => setState(() => _selectedCategory = cat),
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   );
                 },
               ),
@@ -1433,81 +1479,73 @@ class _ProductPickerSheetState extends State<_ProductPickerSheet> {
             Expanded(
               child: _filteredProducts.isEmpty
                   ? Center(
-                child: Text(
-                  'Không tìm thấy sản phẩm',
-                  style:
-                  TextStyle(color: cs.onSurfaceVariant),
-                ),
-              )
-                  : ListView.separated(
-                controller: scrollController,
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 8, vertical: 4),
-                itemCount: _filteredProducts.length,
-                separatorBuilder: (_, __) => Divider(
-                    height: 1,
-                    color: cs.outlineVariant.withOpacity(0.4)),
-                itemBuilder: (_, i) {
-                  final product = _filteredProducts[i];
-                  final isAdded =
-                  widget.alreadyAdded.contains(product.id);
-
-                  return ListTile(
-                    dense: true,
-                    title: Text(
-                      product.name,
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: context.sp(13),
-                        color: isAdded
-                            ? cs.outline
-                            : cs.onSurface,
+                      child: Text(
+                        'Không tìm thấy sản phẩm',
+                        style: TextStyle(color: cs.onSurfaceVariant),
                       ),
-                    ),
-                    subtitle: Text(
-                      '${product.category ?? 'Chưa phân loại'} · ${product.unit ?? ''}',
-                      style: TextStyle(
-                          fontSize: context.sp(11.5),
-                          color: cs.outline),
-                    ),
-                    trailing: isAdded
-                        ? Chip(
-                      label: Text('Đã thêm',
-                          style: TextStyle(
-                              fontSize: context.sp(11))),
-                      padding: EdgeInsets.zero,
-                      visualDensity:
-                      VisualDensity.compact,
                     )
-                        : Column(
-                      mainAxisAlignment:
-                      MainAxisAlignment.center,
-                      crossAxisAlignment:
-                      CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          '${currency.format(product.purchasePrice)} đ',
-                          style: TextStyle(
-                            fontSize: context.sp(13),
-                            fontWeight: FontWeight.bold,
-                            color: cs.primary,
+                  : ListView.separated(
+                      controller: scrollController,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
+                      itemCount: _filteredProducts.length,
+                      separatorBuilder: (_, __) => Divider(
+                          height: 1, color: cs.outlineVariant.withOpacity(0.4)),
+                      itemBuilder: (_, i) {
+                        final product = _filteredProducts[i];
+                        final isAdded =
+                            widget.alreadyAdded.contains(product.id);
+
+                        return ListTile(
+                          dense: true,
+                          title: Text(
+                            product.name,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: context.sp(13),
+                              color: isAdded ? cs.outline : cs.onSurface,
+                            ),
                           ),
-                        ),
-                        SizedBox(height: context.rh(2)),
-                        Icon(Icons.add_circle_rounded,
-                            size: context.sp(20),
-                            color: Colors.green),
-                      ],
+                          subtitle: Text(
+                            '${product.category ?? 'Chưa phân loại'} · ${product.unit ?? ''}',
+                            style: TextStyle(
+                                fontSize: context.sp(11.5), color: cs.outline),
+                          ),
+                          trailing: isAdded
+                              ? Chip(
+                                  label: Text('Đã thêm',
+                                      style:
+                                          TextStyle(fontSize: context.sp(11))),
+                                  padding: EdgeInsets.zero,
+                                  visualDensity: VisualDensity.compact,
+                                )
+                              : Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    Text(
+                                      '${currency.format(product.purchasePrice)} đ',
+                                      style: TextStyle(
+                                        fontSize: context.sp(13),
+                                        fontWeight: FontWeight.bold,
+                                        color: cs.primary,
+                                      ),
+                                    ),
+                                    SizedBox(height: context.rh(2)),
+                                    Icon(Icons.add_circle_rounded,
+                                        size: context.sp(20),
+                                        color: Colors.green),
+                                  ],
+                                ),
+                          onTap: isAdded
+                              ? null
+                              : () {
+                                  widget.onProductSelected(product);
+                                  Navigator.pop(context);
+                                },
+                        );
+                      },
                     ),
-                    onTap: isAdded
-                        ? null
-                        : () {
-                      widget.onProductSelected(product);
-                      Navigator.pop(context);
-                    },
-                  );
-                },
-              ),
             ),
           ],
         ),
@@ -1545,8 +1583,7 @@ class _MiniNumberField extends StatelessWidget {
         hintText: hint,
         suffixText: suffix,
         suffixStyle: TextStyle(fontSize: 12, color: cs.outline),
-        border:
-        OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
           borderSide: BorderSide(color: cs.outlineVariant),
@@ -1555,8 +1592,7 @@ class _MiniNumberField extends StatelessWidget {
           borderRadius: BorderRadius.circular(8),
           borderSide: BorderSide(color: cs.primary),
         ),
-        contentPadding:
-        const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         isDense: true,
       ),
     );

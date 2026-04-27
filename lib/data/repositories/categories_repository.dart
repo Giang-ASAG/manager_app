@@ -33,4 +33,17 @@ class CategoriesRepository {
       throw Exception("Failed to delete product: $e");
     }
   }
+
+  Future<Category> updateCategory(int id, Category category) async {
+    try {
+      final response = await _api.dio.put(
+        '/categories/$id',
+        data: category.toJson(),
+      );
+
+      return Category.fromJson(response.data);
+    } catch (e) {
+      throw Exception("Failed to update product: $e");
+    }
+  }
 }

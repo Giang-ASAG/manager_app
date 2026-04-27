@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
+import 'package:manager/core/extensions/l10n_extension.dart';
 import 'package:manager/core/router/app_routes.dart';
 import 'package:manager/core/utils/app_responsive.dart';
 import 'package:manager/data/models/branch.dart';
@@ -112,7 +113,7 @@ class _BranchesListScreenState extends State<BranchesListScreen>
                   physics: const BouncingScrollPhysics(),
                   slivers: [
                     AppSliverAppBar(
-                      title: 'Chi nhánh',
+                      title: context.l10n.branch,
                       showBackButton: true,
                       height: 150,
                       actions: [
@@ -160,7 +161,7 @@ class _BranchesListScreenState extends State<BranchesListScreen>
         SizedBox(width: context.rw(8)),
         Expanded(
           child: AppSummaryCard(
-            label: 'Danh sách chi nhánh',
+            label: context.l10n.branch_list,
             value: "$count",
             icon: Icons.store_rounded,
             color: Colors.orange,

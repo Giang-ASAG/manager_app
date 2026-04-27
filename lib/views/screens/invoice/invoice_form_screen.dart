@@ -14,7 +14,7 @@ import 'package:manager/viewmodels/invoice_viewmodel.dart';
 import 'package:manager/viewmodels/product_viewmodel.dart';
 import 'package:manager/views/widgets/app_button.dart';
 import 'package:manager/views/widgets/app_sliver_app_bar.dart';
-import 'package:manager/views/widgets/app_snackbar.dart';
+import 'package:manager/views/widgets/alerts/top_alert.dart';
 import 'package:provider/provider.dart';
 
 class _LineItem {
@@ -167,12 +167,12 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen>
     if (!_formKey.currentState!.validate()) return;
 
     if (_lineItems.isEmpty) {
-      AppSnackbar.showInfo(context, 'Vui lòng chọn ít nhất một sản phẩm');
+      TopAlert.info(context, 'Vui lòng chọn ít nhất một sản phẩm');
       return;
     }
 
     if (_selectedCustomer == null && _nameController.text.trim().isEmpty) {
-      AppSnackbar.showInfo(context, 'Vui lòng chọn thông tin khách hàng');
+      TopAlert.info(context, 'Vui lòng chọn thông tin khách hàng');
       return;
     }
 
@@ -232,14 +232,14 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen>
 
     if (mounted) {
       if (success) {
-        AppSnackbar.showSuccess(
+        TopAlert.success(
           context,
           context.l10n.action_success(
               context.l10n.common_add, context.l10n.invoice.toLowerCase()),
         );
         Navigator.pop(context);
       } else {
-        AppSnackbar.showError(
+        TopAlert.error(
           context,
           context.l10n.action_failed(
               context.l10n.common_add, context.l10n.invoice.toLowerCase()),

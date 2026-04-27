@@ -40,13 +40,24 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
           await context.read<CustomerViewmodel>().deleteCustomer(c.id);
       if (mounted && success) {
         TopAlert.success(
-            context,
-            context.l10n.action_success(context.l10n.common_delete,
-                context.l10n.customer.toLowerCase()));
+          context,
+          context.l10n.action_success(
+            context.l10n.common_delete,
+            context.l10n.customer.toLowerCase(),
+          ),
+        );
         context.pop();
       }
     } catch (e) {
-      if (mounted) TopAlert.error(context, "Không thể xóa khách hàng này");
+      if (mounted) {
+        TopAlert.error(
+          context,
+          context.l10n.action_failed(
+            context.l10n.common_delete,
+            context.l10n.customer.toLowerCase(),
+          ),
+        );
+      }
     } finally {
       if (mounted) setState(() => _isDeleting = false);
     }

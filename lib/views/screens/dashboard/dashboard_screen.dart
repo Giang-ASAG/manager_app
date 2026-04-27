@@ -193,7 +193,7 @@ class _DashboardScreenState extends State<DashboardScreen>
         ),
         crossAxisSpacing: context.rw(12),
         mainAxisSpacing: context.rh(12),
-        childAspectRatio: 0.85,
+        childAspectRatio: 0.8,
       ),
       itemCount: actions.length,
       itemBuilder: (context, index) => _buildActionTile(actions[index]),
@@ -230,7 +230,7 @@ class _QuickActionTile extends StatelessWidget {
           splashColor: item.iconColor.withOpacity(0.12),
           highlightColor: item.iconColor.withOpacity(0.05),
           child: Container(
-            padding: EdgeInsets.symmetric(vertical: context.rh(12)),
+            padding: EdgeInsets.symmetric(vertical: context.rh(10)),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [

@@ -148,6 +148,15 @@
   "warehouse_save": "Lưu kho",
   "warehouse_detail": "Chi tiết kho",
 
+  "purchase_order": "Đơn nhập",
+  "purchase_list": "Danh sách đơn nhập",
+  "purchase_add": "Thêm đơn nhập",
+  "purchase_edit": "Sửa đơn nhập",
+  "purchase_delete": "Xóa đơn nhập",
+  "purchase_save": "Lưu đơn nhập",
+  "purchase_detail": "Chi tiết đơn nhập",
+
+
   "settings": "Cài đặt",
 
   "message_success": "Thành công",

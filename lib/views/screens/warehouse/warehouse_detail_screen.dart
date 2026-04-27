@@ -35,13 +35,24 @@ class _WarehouseDetailScreenState extends State<WarehouseDetailScreen> {
           await context.read<WarehouseViewModel>().deleteWarehouse(w.id);
       if (mounted && success) {
         TopAlert.success(
-            context,
-            context.l10n.action_success(context.l10n.common_delete,
-                "${context.l10n.warehouse} ${w.name}"));
+          context,
+          context.l10n.action_success(
+            context.l10n.common_delete,
+            context.l10n.warehouse,
+          ),
+        );
         context.pop();
       }
     } catch (e) {
-      if (mounted) TopAlert.error(context, 'Lỗi: $e');
+      if (mounted) {
+        TopAlert.error(
+          context,
+          context.l10n.action_failed(
+            context.l10n.common_delete,
+            context.l10n.warehouse,
+          ),
+        );
+      }
     } finally {
       if (mounted) setState(() => _isDeleting = false);
     }

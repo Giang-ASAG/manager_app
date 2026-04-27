@@ -295,6 +295,27 @@ class AppLocalizationsVi extends AppLocalizations {
   String get warehouse_detail => 'Chi tiết kho';
 
   @override
+  String get purchase_order => 'Đơn nhập';
+
+  @override
+  String get purchase_list => 'Danh sách đơn nhập';
+
+  @override
+  String get purchase_add => 'Thêm đơn nhập';
+
+  @override
+  String get purchase_edit => 'Sửa đơn nhập';
+
+  @override
+  String get purchase_delete => 'Xóa đơn nhập';
+
+  @override
+  String get purchase_save => 'Lưu đơn nhập';
+
+  @override
+  String get purchase_detail => 'Chi tiết đơn nhập';
+
+  @override
   String get settings => 'Cài đặt';
 
   @override

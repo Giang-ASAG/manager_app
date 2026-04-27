@@ -2,10 +2,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:manager/data/models/branch.dart';
+import 'package:manager/data/models/category.dart';
 import 'package:manager/data/models/customer.dart';
 import 'package:manager/data/models/product.dart';
+import 'package:manager/data/models/purchase.dart';
 import 'package:manager/data/models/supplier.dart';
-import 'package:manager/data/models/warehouse.dart';
 import 'package:manager/viewmodels/auth_viewmodel.dart';
 
 import 'package:manager/views/screens/auth/login_screen.dart';
@@ -42,20 +43,22 @@ class AppRouter {
     return GoRouter(
       initialLocation: AppRoutes.login,
       debugLogDiagnostics: true,
-
       refreshListenable: authViewModel,
       // 👈 QUAN TRỌNG
-
       redirect: (context, state) {
         final isLoggedIn = authViewModel.isLoggedIn;
+        final isInitializing = authViewModel.isInitializing;
         final isGoingToLogin = state.uri.toString() == AppRoutes.login;
 
-        // Chưa login -> luôn về login
+        // 🚫 QUAN TRỌNG: đang init thì KHÔNG redirect
+        if (isInitializing) return null;
+
+        // Chưa login → về login
         if (!isLoggedIn) {
           return isGoingToLogin ? null : AppRoutes.login;
         }
 
-        // Đã login -> không cho quay lại login
+        // Đã login → không cho vào login
         if (isLoggedIn && isGoingToLogin) {
           return AppRoutes.main;
         }
@@ -109,6 +112,15 @@ class AppRouter {
         GoRoute(
           path: AppRoutes.categoryAdd,
           builder: (context, state) => const CategoriesFormScreen(),
+        ),
+        GoRoute(
+          path: AppRoutes.categoryEdit,
+          builder: (context, state) {
+            final cate = state.extra as Category;
+            return CategoriesFormScreen(
+              category: cate,
+            );
+          },
         ),
 
         GoRoute(
@@ -209,6 +221,10 @@ class AppRouter {
           builder: (context, state) => const PurchaseListScreen(),
         ),
         GoRoute(
+          path: AppRoutes.purchaseAdd,
+          builder: (context, state) => const PurchaseFormScreen(),
+        ),
+        GoRoute(
           path: AppRoutes.purchaseDetail,
           builder: (context, state) {
             final id = state.extra is int ? state.extra as int : 0;
@@ -216,8 +232,11 @@ class AppRouter {
           },
         ),
         GoRoute(
-          path: AppRoutes.purchaseAdd,
-          builder: (context, state) => const PurchaseFormScreen(),
+          path: AppRoutes.purchaseEdit,
+          builder: (context, state) {
+            final purchase = state.extra as Purchase;
+            return PurchaseFormScreen(purchase: purchase);
+          },
         ),
 
         // Warehouses Group

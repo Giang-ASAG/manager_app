@@ -2,17 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart'; // Thêm import
 import 'package:manager/core/extensions/l10n_extension.dart';
+import 'package:manager/core/extensions/string_extension.dart';
 import 'package:manager/core/utils/app_responsive.dart';
 import 'package:manager/data/models/category.dart';
 import 'package:manager/viewmodels/categories_viewmodel.dart';
 import 'package:manager/views/widgets/app_button.dart';
 import 'package:manager/views/widgets/app_sliver_app_bar.dart';
-import 'package:manager/views/widgets/app_snackbar.dart';
+import 'package:manager/views/widgets/alerts/top_alert.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 
 class CategoriesFormScreen extends StatefulWidget {
-  const CategoriesFormScreen({super.key});
+  final Category? category;
+
+  const CategoriesFormScreen({super.key, this.category});
 
   @override
   State<CategoriesFormScreen> createState() => _CategoriesFormScreenState();
@@ -28,6 +31,8 @@ class _CategoriesFormScreenState extends State<CategoriesFormScreen>
   bool _isActive = true;
   bool _isPageReady = false;
 
+  bool get _isEditing => widget.category != null;
+
   late AnimationController _animController;
   late Animation<double> _fadeAnim;
   late Animation<Offset> _slideAnim;
@@ -42,7 +47,7 @@ class _CategoriesFormScreenState extends State<CategoriesFormScreen>
     _fadeAnim = CurvedAnimation(parent: _animController, curve: Curves.easeIn);
     _slideAnim = Tween<Offset>(begin: const Offset(0, 0.05), end: Offset.zero)
         .animate(CurvedAnimation(
-        parent: _animController, curve: Curves.easeOutCubic));
+            parent: _animController, curve: Curves.easeOutCubic));
 
     _preparePage();
   }
@@ -51,7 +56,14 @@ class _CategoriesFormScreenState extends State<CategoriesFormScreen>
     // Đợi transition hoàn tất tương tự các màn hình khác
     await Future.delayed(const Duration(milliseconds: 450));
     if (mounted) {
-      setState(() => _isPageReady = true);
+      setState(() {
+        _isPageReady = true;
+        if (_isEditing) {
+          _nameController.text = widget.category!.name;
+          _descriptionController.text = widget.category!.description ?? '';
+          _isActive = widget.category!.status == 'Active';
+        }
+      });
       _animController.forward();
     }
   }
@@ -65,28 +77,52 @@ class _CategoriesFormScreenState extends State<CategoriesFormScreen>
   }
 
   Future<void> _saveCategory() async {
-    if (_formKey.currentState!.validate()) {
-      final categoryVM = context.read<CategoriesViewModel>();
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
 
-      final newCategory = Category(
-        id: 0,
-        name: _nameController.text.trim(),
-        description: _descriptionController.text.trim(),
-        status: _isActive ? 'Active' : 'Inactive',
-      );
+    final categoryVM = context.read<CategoriesViewModel>();
 
-      final success = await categoryVM.createCategory(newCategory);
+    // Tạo dữ liệu Category
+    final categoryData = Category(
+      id: _isEditing ? (widget.category?.id ?? 0) : 0,
+      name: _nameController.text.trim(),
+      description: _descriptionController.text.trim().isEmpty
+          ? null
+          : _descriptionController.text.trim(),
+      status: _isActive ? 'Active' : 'Inactive',
+    );
 
-      if (mounted) {
-        if (success) {
-          AppSnackbar.showSuccess(
-              context,
-              context.l10n.action_success(
-                  context.l10n.common_add, context.l10n.category));
-          context.pop();
-        } else {
-          AppSnackbar.showError(context, categoryVM.error ?? 'Lỗi');
-        }
+    bool success;
+
+    if (_isEditing) {
+      // === UPDATE MODE ===
+      success = await categoryVM.updateCategory(categoryData);
+    } else {
+      // === CREATE MODE ===
+      success = await categoryVM.createCategory(categoryData);
+    }
+
+    if (mounted) {
+      if (success) {
+        TopAlert.success(
+          context,
+          _isEditing
+              ? context.l10n.action_success(
+                  context.l10n.common_edit, context.l10n.category)
+              : context.l10n.action_success(
+                  context.l10n.common_add, context.l10n.category),
+        );
+        context.pop(); // Quay về màn hình trước
+      } else {
+        TopAlert.error(
+          context,
+          categoryVM.error ??
+              context.l10n.action_failed(
+                _isEditing ? context.l10n.common_edit : context.l10n.common_add,
+                context.l10n.category,
+              ),
+        );
       }
     }
   }
@@ -100,97 +136,99 @@ class _CategoriesFormScreenState extends State<CategoriesFormScreen>
       backgroundColor: cs.surfaceContainerLowest,
       body: !_isPageReady
           ? Center(
-        child: LoadingAnimationWidget.dotsTriangle(
-          color: cs.tertiary,
-          size: context.rw(32),
-        ),
-      )
-          : FadeTransition(
-        opacity: _fadeAnim,
-        child: SlideTransition(
-          position: _slideAnim,
-          child: CustomScrollView(
-            physics: const BouncingScrollPhysics(),
-            slivers: [
-              AppSliverAppBar(
-                title: context.l10n.category_add,
-                showBackButton: true,
-                height: 80,
+              child: LoadingAnimationWidget.dotsTriangle(
+                color: cs.tertiary,
+                size: context.rw(32),
               ),
-              SliverPadding(
-                padding: EdgeInsets.fromLTRB(
-                  context.rw(16),
-                  context.rh(24),
-                  context.rw(16),
-                  context.rh(120),
-                ),
-                sliver: SliverToBoxAdapter(
-                  child: Form(
-                    key: _formKey,
-                    child: RepaintBoundary(
-                      child: Column(
-                        children: [
-                          // --- THÔNG TIN DANH MỤC ---
-                          _buildSection(
-                            context,
-                            title: "Thông tin danh mục",
-                            icon: Icons.category_rounded,
-                            children: [
-                              _buildTextField(
-                                context,
-                                controller: _nameController,
-                                label: 'Tên danh mục',
-                                hint: 'Ví dụ: Thiết bị văn phòng',
-                                icon: Icons.edit_note_rounded,
-                                isRequired: true,
-                                validator: (v) => v!.isEmpty
-                                    ? 'Tên không được để trống'
-                                    : null,
-                              ),
-                              SizedBox(height: context.rh(14)),
-                              _buildTextField(
-                                context,
-                                controller: _descriptionController,
-                                label: 'Mô tả',
-                                hint: 'Nhập mô tả danh mục...',
-                                icon: Icons.description_rounded,
-                                maxLines: 3,
-                              ),
-                            ],
-                          ),
-                          SizedBox(height: context.rh(16)),
+            )
+          : FadeTransition(
+              opacity: _fadeAnim,
+              child: SlideTransition(
+                position: _slideAnim,
+                child: CustomScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  slivers: [
+                    AppSliverAppBar(
+                      title: _isEditing == true
+                          ? context.l10n.category_edit
+                          : context.l10n.category_add,
+                      showBackButton: true,
+                      height: 80,
+                    ),
+                    SliverPadding(
+                      padding: EdgeInsets.fromLTRB(
+                        context.rw(16),
+                        context.rh(24),
+                        context.rw(16),
+                        context.rh(120),
+                      ),
+                      sliver: SliverToBoxAdapter(
+                        child: Form(
+                          key: _formKey,
+                          child: RepaintBoundary(
+                            child: Column(
+                              children: [
+                                // --- THÔNG TIN DANH MỤC ---
+                                _buildSection(
+                                  context,
+                                  title: "Thông tin danh mục",
+                                  icon: Icons.category_rounded,
+                                  children: [
+                                    _buildTextField(
+                                      context,
+                                      controller: _nameController,
+                                      label: 'Tên danh mục',
+                                      hint: 'Ví dụ: Thiết bị văn phòng',
+                                      icon: Icons.edit_note_rounded,
+                                      isRequired: true,
+                                      validator: (v) => v!.isEmpty
+                                          ? 'Tên không được để trống'
+                                          : null,
+                                    ),
+                                    SizedBox(height: context.rh(14)),
+                                    _buildTextField(
+                                      context,
+                                      controller: _descriptionController,
+                                      label: 'Mô tả',
+                                      hint: 'Nhập mô tả danh mục...',
+                                      icon: Icons.description_rounded,
+                                      maxLines: 3,
+                                    ),
+                                  ],
+                                ),
+                                SizedBox(height: context.rh(16)),
 
-                          // --- TRẠNG THÁI ---
-                          _buildSection(
-                            context,
-                            title: "Trạng thái hiển thị",
-                            icon: Icons.settings_power_rounded,
-                            children: [_buildStatusToggle(context)],
-                          ),
+                                // --- TRẠNG THÁI ---
+                                _buildSection(
+                                  context,
+                                  title: "Trạng thái hiển thị",
+                                  icon: Icons.settings_power_rounded,
+                                  children: [_buildStatusToggle(context)],
+                                ),
 
-                          SizedBox(height: context.rh(24)),
-                          Center(
-                            child: Text(
-                              "Ngày tạo: ${DateFormat('dd/MM/yyyy').format(DateTime.now())}",
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodySmall
-                                  ?.copyWith(
-                                color: cs.outline,
-                                fontStyle: FontStyle.italic,
-                              ),
+                                SizedBox(height: context.rh(24)),
+                                Center(
+                                  child: Text(
+                                    "Ngày tạo: ${DateFormat('dd/MM/yyyy').format(DateTime.now())}",
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodySmall
+                                        ?.copyWith(
+                                          color: cs.outline,
+                                          fontStyle: FontStyle.italic,
+                                        ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                        ],
+                        ),
                       ),
                     ),
-                  ),
+                  ],
                 ),
               ),
-            ],
-          ),
-        ),
-      ),
+            ),
       bottomSheet: _isPageReady ? _buildBottomSave(context, categoryVM) : null,
     );
   }
@@ -199,8 +237,8 @@ class _CategoriesFormScreenState extends State<CategoriesFormScreen>
 
   Widget _buildSection(BuildContext context,
       {required String title,
-        required IconData icon,
-        required List<Widget> children}) {
+      required IconData icon,
+      required List<Widget> children}) {
     final cs = Theme.of(context).colorScheme;
     return Container(
       decoration: BoxDecoration(
@@ -257,12 +295,12 @@ class _CategoriesFormScreenState extends State<CategoriesFormScreen>
 
   Widget _buildTextField(BuildContext context,
       {required TextEditingController controller,
-        required String label,
-        required String hint,
-        required IconData icon,
-        int maxLines = 1,
-        String? Function(String?)? validator,
-        bool isRequired = false}) {
+      required String label,
+      required String hint,
+      required IconData icon,
+      int maxLines = 1,
+      String? Function(String?)? validator,
+      bool isRequired = false}) {
     final cs = Theme.of(context).colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -378,7 +416,7 @@ class _CategoriesFormScreenState extends State<CategoriesFormScreen>
       decoration: BoxDecoration(
         color: cs.surface,
         border:
-        Border(top: BorderSide(color: cs.outlineVariant.withOpacity(0.3))),
+            Border(top: BorderSide(color: cs.outlineVariant.withOpacity(0.3))),
         boxShadow: [
           BoxShadow(
               color: cs.shadow.withOpacity(0.06),
@@ -391,7 +429,7 @@ class _CategoriesFormScreenState extends State<CategoriesFormScreen>
           padding: EdgeInsets.fromLTRB(
               context.rw(16), context.rh(12), context.rw(16), context.rh(12)),
           child: AppButton(
-            text: "Lưu danh mục",
+            text: context.l10n.category_save.capitalizeFirstOnly(),
             isLoading: vm.isLoading,
             onPressed: _saveCategory,
           ),

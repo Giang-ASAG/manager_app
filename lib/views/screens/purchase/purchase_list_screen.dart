@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
+import 'package:manager/core/extensions/l10n_extension.dart';
 import 'package:manager/core/router/app_routes.dart';
 import 'package:manager/core/utils/app_responsive.dart';
 import 'package:manager/data/models/purchase.dart';
@@ -117,7 +118,7 @@ class _PurchaseListScreenState extends State<PurchaseListScreen>
                       parent: AlwaysScrollableScrollPhysics()),
                   slivers: [
                     AppSliverAppBar(
-                      title: 'Đơn mua hàng',
+                      title: context.l10n.purchase_order,
                       showBackButton: false,
                       height: 160,
                       actions: [
@@ -142,7 +143,7 @@ class _PurchaseListScreenState extends State<PurchaseListScreen>
                             children: [
                               Expanded(
                                 child: AppSummaryCard(
-                                  label: "Số lượng",
+                                  label: context.l10n.purchase_list,
                                   value: "${filtered.length}",
                                   icon: Icons.description_outlined,
                                   color: cs.primary,

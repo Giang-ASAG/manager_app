@@ -295,6 +295,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String get warehouse_detail => 'Warehouse detail';
 
   @override
+  String get purchase_order => 'Purchase Order';
+
+  @override
+  String get purchase_list => 'Purchase Orders';
+
+  @override
+  String get purchase_add => 'Add Purchase Order';
+
+  @override
+  String get purchase_edit => 'Edit Purchase Order';
+
+  @override
+  String get purchase_delete => 'Delete Purchase Order';
+
+  @override
+  String get purchase_save => 'Save Purchase Order';
+
+  @override
+  String get purchase_detail => 'Purchase Order Details';
+
+  @override
   String get settings => 'Settings';
 
   @override

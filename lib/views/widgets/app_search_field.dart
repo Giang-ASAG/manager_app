@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:manager/core/extensions/l10n_extension.dart';
+import 'package:manager/core/utils/app_responsive.dart';
 
 class AppSearchField extends StatelessWidget {
   final TextEditingController controller;
@@ -20,7 +21,7 @@ class AppSearchField extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: cs.surface,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(context.rr(21)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
@@ -50,7 +51,7 @@ class AppSearchField extends StatelessWidget {
             padding: const EdgeInsets.only(left: 12, right: 8),
             child: Icon(
               Icons.search_rounded,
-              color: cs.primary,
+              color: cs.tertiary,
               size: 22,
             ),
           ),

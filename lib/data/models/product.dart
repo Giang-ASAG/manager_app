@@ -54,7 +54,7 @@ class Product {
       displayName: json['displayName'],
       sku: json['sku'],
       specifications: json['specifications'],
-      thickness: json['thinkness'] ?? json['thickness'],
+      thickness: json['thinkness'],
       // hỗ trợ cả 2 tên
       weight: _parseDouble(json['weight']),
       description: json['description'],
@@ -80,7 +80,7 @@ class Product {
       'displayName': displayName,
       'sku': sku,
       'specifications': specifications,
-      'thickness': thickness, // dùng tên đúng
+      'thinkness': thickness, // dùng tên đúng
       'weight': weight,
       'description': description,
       'unit': unit,

@@ -87,7 +87,7 @@ class _SupplierListScreenState extends State<SupplierListScreen>
           if (showLoading) {
             return Center(
               child: LoadingAnimationWidget.dotsTriangle(
-                color: cs.primary,
+                color: cs.tertiary,
                 size: 32,
               ),
             );
@@ -206,7 +206,7 @@ class _SupplierListScreenState extends State<SupplierListScreen>
                     width: 56,
                     height: 56,
                     decoration: BoxDecoration(
-                      color: cs.primaryContainer.withOpacity(0.4),
+                      color: cs.tertiaryContainer.withOpacity(0.4),
                       borderRadius: BorderRadius.circular(18),
                     ),
                     alignment: Alignment.center,
@@ -258,7 +258,7 @@ class _SupplierListScreenState extends State<SupplierListScreen>
                         Text(
                           supplier.phone ?? "Không có SĐT",
                           style: theme.textTheme.bodyMedium?.copyWith(
-                            color: cs.primary,
+                            color: cs.tertiary,
                             fontWeight: FontWeight.bold,
                           ),
                         ),

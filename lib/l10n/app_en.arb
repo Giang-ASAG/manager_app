@@ -131,6 +131,15 @@
   "warehouse_delete": "Delete warehouse",
   "warehouse_save": "Save warehouse",
   "warehouse_detail": "Warehouse detail",
+
+  "purchase_order": "Purchase Order",
+  "purchase_list": "Purchase Orders",
+  "purchase_add": "Add Purchase Order",
+  "purchase_edit": "Edit Purchase Order",
+  "purchase_delete": "Delete Purchase Order",
+  "purchase_save": "Save Purchase Order",
+  "purchase_detail": "Purchase Order Details",
+
   "settings": "Settings",
   "message_success": "Success",
   "message_error": "Error",

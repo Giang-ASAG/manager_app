@@ -650,6 +650,48 @@ abstract class AppLocalizations {
   /// **'Warehouse detail'**
   String get warehouse_detail;
 
+  /// No description provided for @purchase_order.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchase Order'**
+  String get purchase_order;
+
+  /// No description provided for @purchase_list.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchase Orders'**
+  String get purchase_list;
+
+  /// No description provided for @purchase_add.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Purchase Order'**
+  String get purchase_add;
+
+  /// No description provided for @purchase_edit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Purchase Order'**
+  String get purchase_edit;
+
+  /// No description provided for @purchase_delete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Purchase Order'**
+  String get purchase_delete;
+
+  /// No description provided for @purchase_save.
+  ///
+  /// In en, this message translates to:
+  /// **'Save Purchase Order'**
+  String get purchase_save;
+
+  /// No description provided for @purchase_detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchase Order Details'**
+  String get purchase_detail;
+
   /// No description provided for @settings.
   ///
   /// In en, this message translates to:

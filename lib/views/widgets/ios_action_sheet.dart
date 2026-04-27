@@ -27,8 +27,7 @@ Future<void> showIosActionSheet({
             onDetail();
           },
           child: Text(
-            parentContext.l10n.common_detail,
-            // style: TextStyle(color: Colors.yellow),
+            parentContext.l10n.common_detail
           ),
         ),
         CupertinoActionSheetAction(

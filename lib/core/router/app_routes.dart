@@ -12,6 +12,7 @@ class AppRoutes {
   //Categories
   static const categories = "/categories";
   static const categoryAdd = "/categories/add";
+  static const categoryEdit = "/categories/edit/:id";
   //Customers
   static const customers = "/customers";
   static const customerAdd = "/customers/add";

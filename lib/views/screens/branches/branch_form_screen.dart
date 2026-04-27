@@ -7,7 +7,7 @@ import 'package:manager/data/models/branch.dart';
 import 'package:manager/viewmodels/branch_viewmodel.dart';
 import 'package:manager/views/widgets/app_button.dart';
 import 'package:manager/views/widgets/app_sliver_app_bar.dart';
-import 'package:manager/views/widgets/app_snackbar.dart';
+import 'package:manager/views/widgets/alerts/top_alert.dart';
 import 'package:provider/provider.dart';
 
 class BranchFormScreen extends StatefulWidget {
@@ -123,11 +123,24 @@ class _BranchFormScreenState extends State<BranchFormScreen>
 
     if (mounted) {
       if (success) {
-        AppSnackbar.showSuccess(context,
-            isEditing ? 'Cập nhật thành công!' : 'Thêm mới thành công!');
+        TopAlert.success(
+          context,
+          isEditing
+              ? context.l10n
+                  .action_success(context.l10n.common_update, 'chi nhánh')
+              : context.l10n
+                  .action_success(context.l10n.common_add, 'chi nhánh'),
+        );
         context.pop();
       } else {
-        AppSnackbar.showError(context, vm.error ?? 'Có lỗi xảy ra');
+        TopAlert.error(
+          context,
+          isEditing
+              ? context.l10n
+                  .action_failed(context.l10n.common_update, 'chi nhánh')
+              : context.l10n
+                  .action_failed(context.l10n.common_add, 'chi nhánh'),
+        );
       }
     }
   }
@@ -156,8 +169,8 @@ class _BranchFormScreenState extends State<BranchFormScreen>
                   slivers: [
                     AppSliverAppBar(
                       title: isEditing
-                          ? 'Chỉnh sửa chi nhánh'
-                          : 'Thêm chi nhánh mới',
+                          ? context.l10n.branch_edit
+                          : context.l10n.branch_add,
                       showBackButton: true,
                       height: 80,
                     ),
@@ -453,7 +466,7 @@ class _BranchFormScreenState extends State<BranchFormScreen>
           padding: EdgeInsets.fromLTRB(
               context.rw(16), context.rh(12), context.rw(16), context.rh(12)),
           child: AppButton(
-            text: isEditing ? 'Cập nhật chi nhánh' : 'Thêm chi nhánh',
+            text: context.l10n.branch_save,
             isLoading: vm.isLoading,
             onPressed: () => _onSubmit(context, vm, isEditing),
           ),

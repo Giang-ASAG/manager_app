@@ -6,25 +6,25 @@ class AuthViewModel extends ChangeNotifier {
 
   AuthViewModel(this.repo);
 
-  // Private fields
   bool _isLoggedIn = false;
   bool _isLoading = false;
+  bool _isInitializing = true; // ✅ THÊM
+
   String? _errorMessage;
   String? _token;
 
-  // Public getters
   bool get isLoggedIn => _isLoggedIn;
-
   bool get isLoading => _isLoading;
+  bool get isInitializing => _isInitializing; // ✅ THÊM
 
   String? get errorMessage => _errorMessage;
-
   String? get token => _token;
 
   // ====================== LOAD TOKEN KHI MỞ APP ======================
   Future<void> loadToken() async {
     try {
       final savedToken = await repo.getToken();
+
       if (savedToken != null && savedToken.isNotEmpty) {
         _token = savedToken;
         _isLoggedIn = true;
@@ -36,6 +36,8 @@ class AuthViewModel extends ChangeNotifier {
       _isLoggedIn = false;
       _token = null;
     }
+
+    _isInitializing = false; // ✅ QUAN TRỌNG NHẤT
     notifyListeners();
   }
 

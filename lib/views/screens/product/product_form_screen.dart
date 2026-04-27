@@ -150,15 +150,23 @@ class _ProductFormScreenState extends State<ProductFormScreen>
       if (mounted) {
         if (success) {
           TopAlert.success(
-              context,
-              _isEditing
-                  ? context.l10n.action_success(context.l10n.common_update,
-                      context.l10n.product.toLowerCase())
-                  : context.l10n.action_success(context.l10n.common_add,
-                      context.l10n.product.toLowerCase()));
+            context,
+            _isEditing
+                ? context.l10n.action_success(context.l10n.common_update,
+                    context.l10n.product.toLowerCase())
+                : context.l10n.action_success(context.l10n.common_add,
+                    context.l10n.product.toLowerCase()),
+          );
           context.pop();
         } else {
-          TopAlert.error(context, productVM.error ?? 'Lỗi thao tác');
+          TopAlert.error(
+            context,
+            _isEditing
+                ? context.l10n.action_failed(context.l10n.common_update,
+                    context.l10n.product.toLowerCase())
+                : context.l10n.action_failed(context.l10n.common_add,
+                    context.l10n.product.toLowerCase()),
+          );
         }
       }
     }
@@ -224,22 +232,29 @@ class _ProductFormScreenState extends State<ProductFormScreen>
                                         icon: Icons
                                             .label_important_outline_rounded),
                                     SizedBox(height: context.rh(14)),
-                                    Row(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Expanded(
-                                            child: _buildTextField(context,
-                                                controller: _skuController,
-                                                label: 'Mã hiệu (SKU)',
-                                                hint: 'LED-20W',
-                                                icon: Icons.qr_code_rounded)),
-                                        SizedBox(width: context.rw(12)),
-                                        Expanded(
-                                            child: _buildCategoryDropdown(
-                                                categoriesVM, cs)),
-                                      ],
-                                    ),
+                                    _buildTextField(context,
+                                        controller: _skuController,
+                                        label: 'Mã hiệu (SKU)',
+                                        hint: 'LED-20W',
+                                        icon: Icons.qr_code_rounded),
+                                    SizedBox(width: context.rw(12)),
+                                    _buildCategoryDropdown(categoriesVM, cs),
+                                    // Column(
+                                    //   crossAxisAlignment:
+                                    //       CrossAxisAlignment.start,
+                                    //   children: [
+                                    //     Expanded(
+                                    //         child: _buildTextField(context,
+                                    //             controller: _skuController,
+                                    //             label: 'Mã hiệu (SKU)',
+                                    //             hint: 'LED-20W',
+                                    //             icon: Icons.qr_code_rounded)),
+                                    //     SizedBox(width: context.rw(12)),
+                                    //     Expanded(
+                                    //         child: _buildCategoryDropdown(
+                                    //             categoriesVM, cs)),
+                                    //   ],
+                                    // ),
                                   ],
                                 ),
                                 SizedBox(height: context.rh(16)),

@@ -17,15 +17,15 @@ class AppBottomNav extends StatelessWidget {
   List<_NavItem> _items(BuildContext context) {
     return [
       _NavItem(icon: Icons.dashboard, label: context.l10n.dashboard_text),
-      _NavItem(icon: Icons.history, label: context.l10n.invoice),
-      _NavItem(icon: Icons.inventory, label: 'Mua hàng'),
+      _NavItem(icon: Icons.shopping_basket, label: context.l10n.purchase),
+      _NavItem(icon: Icons.description_rounded, label: context.l10n.invoice),
       _NavItem(icon: Icons.settings, label: context.l10n.settings),
     ];
   }
 
   @override
   Widget build(BuildContext context) {
-    final primary = Theme.of(context).colorScheme.tertiary;
+    final tertiary = Theme.of(context).colorScheme.tertiary;
     return SizedBox(
       height: 80,
       child: Stack(
@@ -71,11 +71,11 @@ class AppBottomNav extends StatelessWidget {
                 width: 60,
                 height: 60,
                 decoration: BoxDecoration(
-                  color: primary, // ✅ dùng theme
+                  color: tertiary, // ✅ dùng theme
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: primary.withOpacity(0.4),
+                      color: tertiary.withOpacity(0.4),
                       blurRadius: 16,
                       offset: const Offset(0, 6),
                     ),
@@ -98,7 +98,7 @@ class AppBottomNav extends StatelessWidget {
     final item = _items(context)[index];
     final isSelected = currentIndex == index;
 
-    final primary = Theme.of(context).colorScheme.tertiary;
+    final tertiary = Theme.of(context).colorScheme.tertiary;
     final unselected = Theme.of(context).colorScheme.onSurface.withOpacity(0.4);
 
     return GestureDetector(
@@ -114,25 +114,31 @@ class AppBottomNav extends StatelessWidget {
               duration: const Duration(milliseconds: 200),
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
               decoration: BoxDecoration(
-                color:
-                    isSelected ? primary.withOpacity(0.12) : Colors.transparent,
+                color: isSelected
+                    ? tertiary.withOpacity(0.12)
+                    : Colors.transparent,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
                 item.icon,
                 size: 22,
-                color: isSelected ? primary : unselected,
+                color: isSelected ? tertiary : unselected,
               ),
             ),
             const SizedBox(height: 2),
-            Text(
-              item.label,
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                color: isSelected ? primary : unselected,
+            Flexible(
+              child: Text(
+                item.label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                  color: isSelected ? tertiary : unselected,
+                ),
               ),
-            ),
+            )
           ],
         ),
       ),

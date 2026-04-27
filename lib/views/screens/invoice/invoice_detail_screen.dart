@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 
 class InvoiceDetailScreen extends StatefulWidget {
   final int id;
+
   const InvoiceDetailScreen({super.key, required this.id});
 
   @override
@@ -30,7 +31,8 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
         return DetailScaffold(
           appBarTitle: context.l10n.invoice_detail,
           onRefresh: _fetchData,
-          bottomBar: null, // Hóa đơn thường không có bottom actions (có thể thêm sau)
+          bottomBar: null,
+          // Hóa đơn thường không có bottom actions (có thể thêm sau)
           slivers: invoice == null
               ? [_buildNotFound()]
               : _buildContent(context, invoice),
@@ -80,10 +82,12 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
         child: DetailInfoSection(
           title: 'Chi tiết mặt hàng (${invoice.items.length})',
           children: [
-            ...invoice.items.map((item) => _InvoiceItemTile(
-              item: item,
-              formatter: _currencyFormat,
-            )).toList(),
+            ...invoice.items
+                .map((item) => _InvoiceItemTile(
+                      item: item,
+                      formatter: _currencyFormat,
+                    ))
+                .toList(),
           ],
         ),
       ),
@@ -94,17 +98,20 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
           child: DetailInfoSection(
             title: 'Lịch sử thanh toán',
             children: [
-              ...invoice.payments.map((payment) => _PaymentTile(
-                payment: payment,
-                formatter: _currencyFormat,
-              )).toList(),
+              ...invoice.payments
+                  .map((payment) => _PaymentTile(
+                        payment: payment,
+                        formatter: _currencyFormat,
+                      ))
+                  .toList(),
             ],
           ),
         )
       else
         SliverToBoxAdapter(
           child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: context.rw(16), vertical: context.rh(8)),
+            padding: EdgeInsets.symmetric(
+                horizontal: context.rw(16), vertical: context.rh(8)),
             child: Container(
               padding: EdgeInsets.all(context.rw(16)),
               decoration: BoxDecoration(
@@ -131,6 +138,7 @@ class _InvoiceDetailScreenState extends State<InvoiceDetailScreen> {
 class _InvoiceHeaderCard extends StatelessWidget {
   final Invoice invoice;
   final NumberFormat formatter;
+
   const _InvoiceHeaderCard({required this.invoice, required this.formatter});
 
   @override
@@ -143,9 +151,15 @@ class _InvoiceHeaderCard extends StatelessWidget {
       margin: EdgeInsets.all(context.rw(16)),
       padding: EdgeInsets.all(context.rw(20)),
       decoration: BoxDecoration(
-        gradient: LinearGradient(colors: [cs.primary, cs.primary.withOpacity(0.8)]),
+        gradient:
+            LinearGradient(colors: [cs.tertiary, cs.primary.withOpacity(0.8)]),
         borderRadius: BorderRadius.circular(context.rr(24)),
-        boxShadow: [BoxShadow(color: cs.primary.withOpacity(0.2), blurRadius: 20, offset: const Offset(0, 8))],
+        boxShadow: [
+          BoxShadow(
+              color: cs.tertiary.withOpacity(0.2),
+              blurRadius: 20,
+              offset: const Offset(0, 8))
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -168,7 +182,8 @@ class _InvoiceHeaderCard extends StatelessWidget {
           SizedBox(height: context.rh(16)),
           Text(
             invoice.invoiceNumber,
-            style: tt.headlineSmall?.copyWith(color: Colors.white, fontWeight: FontWeight.bold),
+            style: tt.headlineSmall
+                ?.copyWith(color: Colors.white, fontWeight: FontWeight.bold),
           ),
           Divider(height: context.rh(32), color: Colors.white24),
           Row(
@@ -176,11 +191,17 @@ class _InvoiceHeaderCard extends StatelessWidget {
             children: [
               const Text(
                 "TỔNG TIỀN HÓA ĐƠN",
-                style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold),
               ),
               Text(
                 "${formatter.format(invoice.total)} đ",
-                style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold),
               ),
             ],
           ),
@@ -193,6 +214,7 @@ class _InvoiceHeaderCard extends StatelessWidget {
 class _InvoiceItemTile extends StatelessWidget {
   final dynamic item;
   final NumberFormat formatter;
+
   const _InvoiceItemTile({required this.item, required this.formatter});
 
   @override
@@ -201,7 +223,8 @@ class _InvoiceItemTile extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
         children: [
-          Icon(Icons.shopping_bag_rounded, size: 18, color: Theme.of(context).colorScheme.outline),
+          Icon(Icons.shopping_bag_rounded,
+              size: 18, color: Theme.of(context).colorScheme.outline),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -209,12 +232,15 @@ class _InvoiceItemTile extends StatelessWidget {
               children: [
                 Text(
                   item.productName,
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold, fontSize: 13),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   "${item.qty} ${item.unit} x ${formatter.format(item.unitPrice ?? 0)}",
-                  style: TextStyle(color: Theme.of(context).colorScheme.outline, fontSize: 12),
+                  style: TextStyle(
+                      color: Theme.of(context).colorScheme.outline,
+                      fontSize: 12),
                 ),
               ],
             ),
@@ -232,6 +258,7 @@ class _InvoiceItemTile extends StatelessWidget {
 class _PaymentTile extends StatelessWidget {
   final dynamic payment;
   final NumberFormat formatter;
+
   const _PaymentTile({required this.payment, required this.formatter});
 
   @override
@@ -253,7 +280,8 @@ class _PaymentTile extends StatelessWidget {
               children: [
                 Text(
                   payment.method,
-                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                  style: const TextStyle(
+                      fontWeight: FontWeight.w600, fontSize: 13),
                 ),
                 if (payment.reference != null)
                   Text(

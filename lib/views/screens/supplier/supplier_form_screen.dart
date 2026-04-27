@@ -107,15 +107,24 @@ class _SupplierFormScreenState extends State<SupplierFormScreen>
 
       if (mounted) {
         if (success) {
-          TopAlert.success(context, _isEditMode
-              ? context.l10n.action_success(
-              context.l10n.common_edit, context.l10n.supplier)
-              : context.l10n.action_success(
-              context.l10n.common_add, context.l10n.supplier),
+          TopAlert.success(
+            context,
+            _isEditMode
+                ? context.l10n.action_success(
+                    context.l10n.common_update, context.l10n.supplier)
+                : context.l10n.action_success(
+                    context.l10n.common_add, context.l10n.supplier),
           );
           context.pop();
         } else {
-          TopAlert.error(context, supplierVM.error ?? 'Lỗi hệ thống');
+          TopAlert.error(
+            context,
+            _isEditMode
+                ? context.l10n.action_failed(
+                    context.l10n.common_update, context.l10n.supplier)
+                : context.l10n.action_failed(
+                    context.l10n.common_add, context.l10n.supplier),
+          );
         }
       }
     }

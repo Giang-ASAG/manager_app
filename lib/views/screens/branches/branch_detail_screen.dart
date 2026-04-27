@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:manager/core/extensions/l10n_extension.dart';
 import 'package:manager/core/router/app_routes.dart';
 import 'package:manager/data/models/branch.dart';
 import 'package:manager/viewmodels/branch_viewmodel.dart';
 import 'package:manager/views/widgets/action_bottom_buttons.dart';
-import 'package:manager/views/widgets/app_snackbar.dart';
+import 'package:manager/views/widgets/alerts/top_alert.dart';
 import 'package:manager/views/widgets/custom_popup.dart';
 import 'package:manager/views/widgets/detail/detail_status_badge.dart';
 import 'package:provider/provider.dart';
@@ -22,19 +23,29 @@ class BranchDetailScreen extends StatefulWidget {
 class _BranchDetailScreenState extends State<BranchDetailScreen> {
   bool _isDeleting = false;
 
-  Future<void> _handleNull() async {}
-
   Future<void> _handleDelete(Branch b) async {
     setState(() => _isDeleting = true);
     try {
       final success = await context.read<BranchViewModel>().deleteBranch(b.id);
       if (mounted && success) {
-        AppSnackbar.showSuccess(context, 'Đã xóa chi nhánh ${b.name}');
+        TopAlert.success(
+          context,
+          context.l10n.action_success(
+            context.l10n.common_delete,
+            context.l10n.branch.toLowerCase(),
+          ),
+        );
         context.pop();
       }
     } catch (e) {
       if (mounted) {
-        AppSnackbar.showError(context, 'Không thể xóa chi nhánh');
+        TopAlert.error(
+          context,
+          context.l10n.action_failed(
+            context.l10n.common_delete,
+            context.l10n.branch.toLowerCase(),
+          ),
+        );
       }
     } finally {
       if (mounted) setState(() => _isDeleting = false);
@@ -62,7 +73,7 @@ class _BranchDetailScreenState extends State<BranchDetailScreen> {
         }
 
         return DetailScaffold(
-          appBarTitle: 'Chi tiết chi nhánh',
+          appBarTitle: context.l10n.branch_detail,
           onRefresh: () async {
             // Thực hiện logic refresh thực tế tại đây nếu cần
           },
@@ -146,24 +157,19 @@ class _BranchDetailScreenState extends State<BranchDetailScreen> {
 
   Widget _buildBottomActions(BuildContext context, Branch b) {
     return ActionBottomButtons(
-      isDeleting: _isDeleting,
-      editText: 'Chỉnh sửa',
-      deleteText: 'Xóa chi nhánh',
-      onDelete: () => showPopup(
-        context: context,
-        title: 'Xác nhận xóa',
-        content:
-            'Bạn có chắc chắn muốn xóa chi nhánh "${b.name}"? Hành động này không thể hoàn tác.',
-        type: AlertType.warning,
-        onOkPressed: () => _handleDelete(b),
-      ),
+        isDeleting: _isDeleting,
+        editText: context.l10n.branch_edit,
+        deleteText: context.l10n.branch_delete,
+        onDelete: () => showPopup(
+              context: context,
+              title: context.l10n.common_warning,
+              content: context.l10n.confirmDeleteItem(b.name),
+              onCancelPressed: () {},
+              type: AlertType.warning,
+              onOkPressed: () => _handleDelete(b),
+            ),
 
-      /// ⚠️ FIX QUAN TRỌNG (tránh lỗi :id)
-      onEdit: () => context.pushNamed(
-        'branchEdit',
-        pathParameters: {'id': b.id.toString()},
-        extra: b,
-      ),
-    );
+        /// ⚠️ FIX QUAN TRỌNG (tránh lỗi :id)
+        onEdit: () => context.push(AppRoutes.branchEdit, extra: b));
   }
 }

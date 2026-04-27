@@ -39,11 +39,24 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           await context.read<ProductViewModel>().deleteProduct(p.id);
       if (mounted && success) {
         TopAlert.success(
-            context, context.l10n.confirmDeleteItem(p.name.toLowerCase()));
+          context,
+          context.l10n.action_success(
+            context.l10n.common_delete,
+            context.l10n.product.toLowerCase(),
+          ),
+        );
         context.pop();
       }
     } catch (e) {
-      if (mounted) TopAlert.success(context, "Không thể xóa sản phẩm này");
+      if (mounted) {
+        TopAlert.error(
+          context,
+          context.l10n.action_failed(
+            context.l10n.common_delete,
+            context.l10n.product.toLowerCase(),
+          ),
+        );
+      }
     } finally {
       if (mounted) setState(() => _isDeleting = false);
     }

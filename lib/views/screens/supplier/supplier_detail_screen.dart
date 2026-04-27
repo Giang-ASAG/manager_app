@@ -38,13 +38,24 @@ class _SupplierDetailScreenState extends State<SupplierDetailScreen> {
           await context.read<SupplierViewmodel>().deleteSupplier(s.id!);
       if (mounted && success) {
         TopAlert.success(
-            context,
-            context.l10n.action_success(
-                context.l10n.common_delete, context.l10n.supplier));
+          context,
+          context.l10n.action_success(
+            context.l10n.common_delete,
+            context.l10n.supplier,
+          ),
+        );
         context.pop();
       }
     } catch (e) {
-      if (mounted) TopAlert.error(context, 'Lỗi: $e');
+      if (mounted) {
+        TopAlert.error(
+          context,
+          context.l10n.action_failed(
+            context.l10n.common_delete,
+            context.l10n.supplier,
+          ),
+        );
+      }
     } finally {
       if (mounted) setState(() => _isDeleting = false);
     }

@@ -29,11 +29,12 @@ class PurchaseViewmodel extends ChangeNotifier {
   }
 
   Future<void> fetchPurchaseById(int id) async {
-    isLoading = true;
-    notifyListeners();
+
     try {
       final purchase = await _repo.getPurchaseById(id);
       purchaseData = purchase;
+      isLoading = true;
+      notifyListeners();
     } catch (e) {
       purchaseData = null;
       debugPrint("Error fetching purchase detail: $e");

@@ -116,7 +116,7 @@ class _WarehouseFormScreenState extends State<WarehouseFormScreen>
   Future<void> _submit() async {
     if (_formKey.currentState!.validate()) {
       if (selectedBranch == null) {
-        TopAlert.error(context, 'Vui lòng chọn chi nhánh');
+        TopAlert.info(context, 'Vui lòng chọn chi nhánh');
         return;
       }
 
@@ -144,13 +144,21 @@ class _WarehouseFormScreenState extends State<WarehouseFormScreen>
               context,
               _isEditMode
                   ? context.l10n.action_success(
-                      context.l10n.common_edit, context.l10n.warehouse)
+                      context.l10n.common_update, context.l10n.warehouse)
                   : context.l10n.action_success(
                       context.l10n.common_add, context.l10n.warehouse));
           context.pop();
         } else {
           debugPrint(vm.error);
-          TopAlert.error(context, vm.error ?? 'Lỗi hệ thống');
+          TopAlert.error(
+            context,
+            context.l10n.action_failed(
+              _isEditMode
+                  ? context.l10n.common_update
+                  : context.l10n.common_add,
+              context.l10n.warehouse,
+            ),
+          );
         }
       }
     }

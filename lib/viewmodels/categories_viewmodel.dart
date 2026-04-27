@@ -47,8 +47,6 @@ class CategoriesViewModel extends ChangeNotifier {
     }
   }
 
-
-
 // ================= DELETE =================
   Future<bool> deleteCategory(int id) async {
     try {
@@ -60,6 +58,32 @@ class CategoriesViewModel extends ChangeNotifier {
       error = e.toString();
       notifyListeners();
       return false;
+    }
+  }
+
+  Future<bool> updateCategory(Category updatedCategory) async {
+    try {
+      isLoading = true;
+      error = null;
+      notifyListeners();
+
+      final result =
+          await _repo.updateCategory(updatedCategory.id, updatedCategory);
+      // Cập nhật lại item trong danh sách
+      final index =
+          categories.indexWhere((cat) => cat.id == updatedCategory.id);
+      if (index != -1) {
+        categories[index] = result; // Dùng dữ liệu trả về từ server để đồng bộ
+      }
+
+      return true;
+    } catch (e) {
+      error = e.toString();
+      debugPrint("Error updating category: $e");
+      return false;
+    } finally {
+      isLoading = false;
+      notifyListeners();
     }
   }
 }

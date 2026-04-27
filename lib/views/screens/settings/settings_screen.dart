@@ -6,7 +6,7 @@ import 'package:manager/viewmodels/auth_viewmodel.dart';
 import 'package:manager/viewmodels/language_viewmodel.dart';
 import 'package:manager/viewmodels/theme_viewmodel.dart';
 import 'package:manager/views/widgets/app_sliver_app_bar.dart';
-import 'package:manager/views/widgets/app_snackbar.dart';
+import 'package:manager/views/widgets/alerts/top_alert.dart';
 import 'package:manager/views/widgets/custom_popup.dart';
 import 'package:provider/provider.dart';
 import 'package:rflutter_alert/rflutter_alert.dart';
@@ -71,7 +71,7 @@ class _SettingsScreenState extends State<SettingsScreen>
         try {
           await context.read<AuthViewModel>().logout();
           if (mounted) {
-            AppSnackbar.showSuccess(context, context.l10n.logout_success);
+            TopAlert.success(context, context.l10n.logout_success);
           }
         } finally {
           if (mounted) setState(() => _isLoggingOut = false);
@@ -117,7 +117,7 @@ class _SettingsScreenState extends State<SettingsScreen>
         backgroundColor: cs.surfaceContainerLowest,
         body: Center(
           child: LoadingAnimationWidget.dotsTriangle(
-            color: cs.primary,
+            color: cs.tertiary,
             size: 32,
           ),
         ),
@@ -219,48 +219,24 @@ class _SettingsScreenState extends State<SettingsScreen>
           ),
         ),
         if (_isLoggingOut || _isLoadingAction)
-          Container(
-            color: Colors.black.withOpacity(0.3),
-            child: Center(
-              child: Card(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      LoadingAnimationWidget.dotsTriangle(
-                        color: cs.primary,
-                        size: 32,
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        _isLoggingOut
-                            ? context.l10n.logout_text + '...'
-                            : 'Đang cập nhật...',
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      ),
-                    ],
+          Positioned.fill(
+            child: AbsorbPointer(
+              absorbing: true,
+              child: Container(
+                color: Colors.black.withOpacity(0.3),
+                child: Center(
+                  child: LoadingAnimationWidget.dotsTriangle(
+                    color: cs.tertiary,
+                    size: 32,
                   ),
                 ),
               ),
             ),
-          ),
+          )
       ],
     );
   }
 }
-
-// Các class con _SectionLabel, _SettingsCard, _SwitchTile, _RadioTile,
-// _ActionTile, _LeadingIcon giữ nguyên như cũ, không cần thay đổi.
-// (Code các class này đã có ở phiên bản trước)
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Shared sub-widgets (giữ nguyên)
-// ─────────────────────────────────────────────────────────────────────────────
 
 class _SectionLabel extends StatelessWidget {
   const _SectionLabel({required this.label, required this.r});
@@ -278,7 +254,7 @@ class _SectionLabel extends StatelessWidget {
         style: TextStyle(
           fontSize: r.sp(11),
           fontWeight: FontWeight.w700,
-          color: cs.primary,
+          color: cs.tertiary,
           letterSpacing: 1.2,
         ),
       ),
@@ -442,7 +418,7 @@ class _LeadingIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final c = color ?? cs.primary;
+    final c = color ?? cs.tertiary;
     return Container(
       width: r.w(38),
       height: r.w(38),
