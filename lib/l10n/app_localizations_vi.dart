@@ -253,6 +253,48 @@ class AppLocalizationsVi extends AppLocalizations {
   String get debt_manage => 'Quản lý công nợ';
 
   @override
+  String get branch => 'Chi nhánh';
+
+  @override
+  String get branch_list => 'Danh sách chi nhánh';
+
+  @override
+  String get branch_add => 'Thêm chi nhánh';
+
+  @override
+  String get branch_edit => 'Sửa chi nhánh';
+
+  @override
+  String get branch_delete => 'Xóa chi nhánh';
+
+  @override
+  String get branch_save => 'Lưu chi nhánh';
+
+  @override
+  String get branch_detail => 'Chi tiết chi nhánh';
+
+  @override
+  String get warehouse => 'Kho';
+
+  @override
+  String get warehouse_list => 'Danh sách kho';
+
+  @override
+  String get warehouse_add => 'Thêm kho';
+
+  @override
+  String get warehouse_edit => 'Sửa kho';
+
+  @override
+  String get warehouse_delete => 'Xóa kho';
+
+  @override
+  String get warehouse_save => 'Lưu kho';
+
+  @override
+  String get warehouse_detail => 'Chi tiết kho';
+
+  @override
   String get settings => 'Cài đặt';
 
   @override

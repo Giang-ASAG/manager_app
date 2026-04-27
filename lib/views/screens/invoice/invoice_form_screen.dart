@@ -31,9 +31,15 @@ class _LineItem {
   double get lineTotal => qty * unitPrice;
 }
 
-const List<String> _kStatuses = ['Nhập', 'Đã Gửi', 'Đã Thanh Toán', 'Quá Hạn'];
+const List<String> _kStatuses = [
+  'Nhập',
+  'Đã Gửi',
+  'Đã Thanh Toán',
+  'Quá Hạn',
+];
 
 // ====================== MAIN SCREEN ======================
+
 class InvoiceFormScreen extends StatefulWidget {
   const InvoiceFormScreen({super.key});
 
@@ -42,7 +48,7 @@ class InvoiceFormScreen extends StatefulWidget {
 }
 
 class _InvoiceFormScreenState extends State<InvoiceFormScreen>
-    with SingleTickerProviderStateMixin {           // ← thêm mixin
+    with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _currencyFormatter = NumberFormat('#,##0', 'vi_VN');
 
@@ -52,7 +58,7 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen>
   late Animation<double> _fadeAnim;
   late Animation<Offset> _slideAnim;
 
-  // Form State
+  // Form state
   DateTime _invoiceDate = DateTime.now();
   String _status = 'Nhập';
 
@@ -60,6 +66,8 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen>
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
   final _addressController = TextEditingController();
+  final _discountController = TextEditingController();
+  final _cashController = TextEditingController();
 
   final List<_LineItem> _lineItems = [];
   double _discount = 0.0;
@@ -68,9 +76,13 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen>
   // Computed values
   double get _subtotal =>
       _lineItems.fold(0.0, (sum, item) => sum + item.lineTotal);
+
   double get _total => (_subtotal - _discount).clamp(0.0, double.infinity);
+
   double get _change => (_cashReceived - _total).clamp(0.0, double.infinity);
+
   double get _debt => (_total - _cashReceived).clamp(0.0, double.infinity);
+
   bool get _hasDebt => _cashReceived > 0 && _cashReceived < _total;
 
   // ── Lifecycle ────────────────────────────────────────
@@ -87,8 +99,8 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen>
     _slideAnim = Tween<Offset>(
       begin: const Offset(0, 0.05),
       end: Offset.zero,
-    ).animate(CurvedAnimation(
-        parent: _animController, curve: Curves.easeOutCubic));
+    ).animate(
+        CurvedAnimation(parent: _animController, curve: Curves.easeOutCubic));
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<ProductViewModel>().fetchProducts();
@@ -113,10 +125,12 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen>
     _nameController.dispose();
     _phoneController.dispose();
     _addressController.dispose();
+    _discountController.dispose();
+    _cashController.dispose();
     super.dispose();
   }
 
-  // ==================== HANDLERS ====================
+  // ── Handlers ─────────────────────────────────────────
 
   void _onCustomerSelected(Customer? customer) {
     if (customer == null) return;
@@ -140,10 +154,8 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen>
 
   void _addProduct(Product product) {
     setState(() {
-      _lineItems.add(_LineItem(
-        product: product,
-        unitPrice: product.purchasePrice,
-      ));
+      _lineItems
+          .add(_LineItem(product: product, unitPrice: product.purchasePrice));
     });
   }
 
@@ -155,16 +167,16 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen>
     if (!_formKey.currentState!.validate()) return;
 
     if (_lineItems.isEmpty) {
-      AppSnackbar.showInfo(context, "Vui lòng chọn ít nhất một sản phẩm");
+      AppSnackbar.showInfo(context, 'Vui lòng chọn ít nhất một sản phẩm');
       return;
     }
 
     if (_selectedCustomer == null && _nameController.text.trim().isEmpty) {
-      AppSnackbar.showInfo(context, "Vui lòng chọn thông tin khách hàng");
+      AppSnackbar.showInfo(context, 'Vui lòng chọn thông tin khách hàng');
       return;
     }
 
-    String finalStatus;
+    final String finalStatus;
     if (_cashReceived >= _total) {
       finalStatus = 'Paid';
     } else if (_cashReceived > 0) {
@@ -173,7 +185,7 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen>
       finalStatus = 'Draft';
     }
 
-    List<Payment> payList = [];
+    final payList = <Payment>[];
     if (_cashReceived > 0) {
       payList.add(Payment(
         id: 0,
@@ -187,19 +199,19 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen>
 
     final invoiceItems = _lineItems
         .map((item) => InvoiceItem(
-      productId: item.product.id,
-      productName: item.product.name,
-      unitPrice: item.unitPrice,
-      qty: item.qty,
-      unit: item.product.unit ?? '',
-      lineTotal: item.lineTotal,
-    ))
+              productId: item.product.id,
+              productName: item.product.name,
+              unitPrice: item.unitPrice,
+              qty: item.qty,
+              unit: item.product.unit ?? '',
+              lineTotal: item.lineTotal,
+            ))
         .toList();
 
+    final invoiceVM = context.read<InvoiceViewmodel>();
     final newInvoice = Invoice(
       id: 0,
-      invoiceNumber:
-      'INV0-00000${context.read<InvoiceViewmodel>().invoices.length + 1}',
+      invoiceNumber: 'INV0-00000${invoiceVM.invoices.length + 1}',
       customerName: _nameController.text.trim(),
       customerId: _selectedCustomer?.id ?? 0,
       customerAddress: _addressController.text.trim(),
@@ -216,24 +228,27 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen>
       items: invoiceItems,
     );
 
-    final success =
-    await context.read<InvoiceViewmodel>().createInvoice(newInvoice);
+    final success = await invoiceVM.createInvoice(newInvoice);
 
-    if (success) {
-      AppSnackbar.showSuccess(
+    if (mounted) {
+      if (success) {
+        AppSnackbar.showSuccess(
           context,
           context.l10n.action_success(
-              context.l10n.common_add, context.l10n.invoice.toLowerCase()));
-      Navigator.pop(context);
-    } else {
-      AppSnackbar.showError(
+              context.l10n.common_add, context.l10n.invoice.toLowerCase()),
+        );
+        Navigator.pop(context);
+      } else {
+        AppSnackbar.showError(
           context,
           context.l10n.action_failed(
-              context.l10n.common_add, context.l10n.invoice.toLowerCase()));
+              context.l10n.common_add, context.l10n.invoice.toLowerCase()),
+        );
+      }
     }
   }
 
-  // ==================== BUILD ====================
+  // ── Build ─────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
@@ -244,332 +259,683 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen>
 
     return Scaffold(
       backgroundColor: cs.surfaceContainerLowest,
-      // ── bottomSheet chỉ hiện khi trang đã sẵn sàng ──
-      bottomSheet: _isPageReady
-          ? Container(
-        decoration: BoxDecoration(
-          color: cs.surface,
-          border: Border(
-              top: BorderSide(
-                  color: cs.outlineVariant.withOpacity(0.3))),
-          boxShadow: [
-            BoxShadow(
-              color: cs.shadow.withOpacity(0.06),
-              blurRadius: 12,
-              offset: const Offset(0, -3),
-            ),
-          ],
-        ),
-        child: SafeArea(
-          child: Padding(
-            padding: EdgeInsets.fromLTRB(context.rw(16),
-                context.rh(12), context.rw(16), context.rh(12)),
-            child: AppButton(
-              text: context.l10n.invoice_save,
-              isLoading: productVM.isLoading,
-              onPressed: _submitForm,
-            ),
-          ),
-        ),
-      )
-          : null,
+      bottomSheet: _isPageReady ? _buildBottomSave(context, invoiceVM) : null,
       body: !_isPageReady
-      // ── Loading state ─────────────────────────────────
           ? Center(
-        child: LoadingAnimationWidget.dotsTriangle(
-          color: cs.primary,
-          size: context.rw(32),
-        ),
-      )
-      // ── Content với fade + slide ──────────────────────
+              child: LoadingAnimationWidget.dotsTriangle(
+                color: cs.primary,
+                size: context.rw(32),
+              ),
+            )
           : FadeTransition(
-        opacity: _fadeAnim,
-        child: SlideTransition(
-          position: _slideAnim,
-          child: Form(
-            key: _formKey,
-            child: CustomScrollView(
-              physics: const BouncingScrollPhysics(),
-              slivers: [
-                AppSliverAppBar(
-                  title: context.l10n.invoice_add,
-                  showBackButton: true,
-                  height: 80,
-                ),
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(0, 8, 0, 140),
-                  sliver: SliverList(
-                    delegate: SliverChildListDelegate([
-                      _buildInvoiceInfoCard(cs, invoiceVM.invoices),
-                      _buildSectionLabel('Thông Tin Khách Hàng'),
-                      _buildCustomerSection(cs, customerVM.customers),
-                      _buildSectionLabel('Sản Phẩm'),
-                      _buildProductsSection(cs, productVM.products),
-                      _buildSectionLabel('Tổng Kết'),
-                      _buildSummarySection(cs),
-                    ]),
+              opacity: _fadeAnim,
+              child: SlideTransition(
+                position: _slideAnim,
+                child: Form(
+                  key: _formKey,
+                  child: CustomScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    slivers: [
+                      AppSliverAppBar(
+                        title: context.l10n.invoice_add,
+                        showBackButton: true,
+                        height: 80,
+                      ),
+                      SliverPadding(
+                        padding: EdgeInsets.fromLTRB(
+                          context.rw(16),
+                          context.rh(24),
+                          context.rw(16),
+                          context.rh(120),
+                        ),
+                        sliver: SliverToBoxAdapter(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // ── Thông tin hóa đơn ──────────────────────
+                              _buildSection(
+                                context,
+                                title: 'Thông Tin Hóa Đơn',
+                                icon: Icons.receipt_long_rounded,
+                                children: [
+                                  _buildReadonlyField(
+                                    context,
+                                    label: 'Số Hóa Đơn',
+                                    value:
+                                        'INV0-00000${invoiceVM.invoices.length + 1}',
+                                    icon: Icons.tag_rounded,
+                                  ),
+                                  SizedBox(height: context.rh(14)),
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: _buildDateField(context),
+                                      ),
+                                      SizedBox(width: context.rw(12)),
+                                      Expanded(
+                                        child: _buildDropdownField(
+                                          context,
+                                          label: 'Trạng Thái',
+                                          icon: Icons.flag_rounded,
+                                          value: _status,
+                                          items: _kStatuses,
+                                          onChanged: (v) => setState(
+                                              () => _status = v ?? 'Nhập'),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                              SizedBox(height: context.rh(16)),
+
+                              // ── Khách hàng ─────────────────────────────
+                              _buildSection(
+                                context,
+                                title: 'Thông Tin Khách Hàng',
+                                icon: Icons.person_pin_rounded,
+                                trailing: TextButton(
+                                  onPressed: () {
+                                    // TODO: Navigate to add new customer
+                                  },
+                                  style: TextButton.styleFrom(
+                                    padding: EdgeInsets.zero,
+                                    minimumSize: Size.zero,
+                                    tapTargetSize:
+                                        MaterialTapTargetSize.shrinkWrap,
+                                  ),
+                                  child: Text(
+                                    'Thêm mới',
+                                    style: TextStyle(
+                                      color:
+                                          Theme.of(context).colorScheme.primary,
+                                      fontSize: context.sp(12),
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                                children: [
+                                  _buildCustomerDropdown(
+                                      context, customerVM.customers),
+                                  SizedBox(height: context.rh(14)),
+                                  _buildTextField(
+                                    context,
+                                    controller: _nameController,
+                                    label: 'Tên Khách Hàng',
+                                    hint: 'Nhập họ và tên',
+                                    icon: Icons.person_outline_rounded,
+                                    isRequired: true,
+                                    validator: (v) => v!.trim().isEmpty
+                                        ? 'Vui lòng nhập tên'
+                                        : null,
+                                  ),
+                                  SizedBox(height: context.rh(14)),
+                                  _buildTextField(
+                                    context,
+                                    controller: _phoneController,
+                                    label: 'Số Điện Thoại',
+                                    hint: '0901 234 567',
+                                    icon: Icons.phone_android_rounded,
+                                    keyboardType: TextInputType.phone,
+                                  ),
+                                  SizedBox(height: context.rh(14)),
+                                  _buildTextField(
+                                    context,
+                                    controller: _addressController,
+                                    label: 'Địa Chỉ',
+                                    hint: 'Địa chỉ giao hàng',
+                                    icon: Icons.home_outlined,
+                                  ),
+                                ],
+                              ),
+                              SizedBox(height: context.rh(16)),
+
+                              // ── Sản phẩm ───────────────────────────────
+                              _buildSection(
+                                context,
+                                title: 'Sản Phẩm',
+                                icon: Icons.inventory_2_rounded,
+                                trailing: FilledButton.tonalIcon(
+                                  onPressed: () => _showProductPicker(
+                                    productVM.products,
+                                    _lineItems.map((e) => e.product.id).toSet(),
+                                  ),
+                                  icon: Icon(Icons.add_rounded,
+                                      size: context.sp(16)),
+                                  label: const Text('Thêm'),
+                                  style: FilledButton.styleFrom(
+                                    padding: EdgeInsets.symmetric(
+                                        horizontal: context.rw(12),
+                                        vertical: context.rh(6)),
+                                    textStyle: TextStyle(
+                                        fontSize: context.sp(12),
+                                        fontWeight: FontWeight.w600),
+                                    visualDensity: VisualDensity.compact,
+                                  ),
+                                ),
+                                children: [
+                                  _buildProductList(context),
+                                ],
+                              ),
+                              SizedBox(height: context.rh(16)),
+
+                              // ── Tổng kết ───────────────────────────────
+                              _buildSection(
+                                context,
+                                title: 'Tổng Kết',
+                                icon: Icons.calculate_rounded,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: _buildTextField(
+                                          context,
+                                          controller: _discountController,
+                                          label: 'Giảm Giá (VNĐ)',
+                                          hint: '0',
+                                          icon: Icons.discount_outlined,
+                                          keyboardType: TextInputType.number,
+                                          inputFormatters: [
+                                            FilteringTextInputFormatter
+                                                .digitsOnly
+                                          ],
+                                          onChanged: (v) => setState(() =>
+                                              _discount =
+                                                  double.tryParse(v) ?? 0),
+                                        ),
+                                      ),
+                                      SizedBox(width: context.rw(12)),
+                                      Expanded(
+                                        child: _buildTextField(
+                                          context,
+                                          controller: _cashController,
+                                          label: 'Tiền Nhận (VNĐ)',
+                                          hint: '0',
+                                          icon: Icons.payments_outlined,
+                                          keyboardType: TextInputType.number,
+                                          inputFormatters: [
+                                            FilteringTextInputFormatter
+                                                .digitsOnly
+                                          ],
+                                          onChanged: (v) => setState(() =>
+                                              _cashReceived =
+                                                  double.tryParse(v) ?? 0),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  SizedBox(height: context.rh(16)),
+                                  _buildSummaryBlock(context),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
+              ),
+            ),
+    );
+  }
+
+  // ──────────────────────────────────────────────────────────────────
+  //  Section Card  (same pattern as CustomerFormScreen)
+  // ──────────────────────────────────────────────────────────────────
+
+  Widget _buildSection(
+    BuildContext context, {
+    required String title,
+    required IconData icon,
+    required List<Widget> children,
+    Widget? trailing,
+  }) {
+    final cs = Theme.of(context).colorScheme;
+    return Container(
+      decoration: BoxDecoration(
+        color: cs.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: cs.outlineVariant.withOpacity(0.5)),
+        boxShadow: [
+          BoxShadow(
+            color: cs.shadow.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: EdgeInsets.fromLTRB(
+                context.rw(16), context.rh(14), context.rw(16), context.rh(4)),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: cs.tertiaryContainer,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(icon, size: context.sp(15), color: cs.tertiary),
+                ),
+                SizedBox(width: context.rw(10)),
+                Expanded(
+                  child: Text(
+                    title.toUpperCase(),
+                    style: TextStyle(
+                      fontSize: context.sp(11),
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.8,
+                      color: cs.tertiary,
+                    ),
+                  ),
+                ),
+                if (trailing != null) trailing,
               ],
             ),
           ),
-        ),
+          Divider(
+              height: 1,
+              thickness: 1,
+              color: cs.outlineVariant.withOpacity(0.4)),
+          Padding(
+            padding: EdgeInsets.all(context.rw(16)),
+            child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: children),
+          ),
+        ],
       ),
     );
   }
 
-  // ==================== SECTIONS ====================
+  // ──────────────────────────────────────────────────────────────────
+  //  Text Field  (same pattern as CustomerFormScreen)
+  // ──────────────────────────────────────────────────────────────────
 
-  Widget _buildInvoiceInfoCard(ColorScheme cs, List<Invoice> invoices) {
-    return _Card(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _LabeledField(
-            label: 'Số Hóa Đơn',
-            child: Container(
-              width: double.infinity,
-              padding: EdgeInsets.symmetric(
-                  horizontal: context.rw(12), vertical: context.rh(12)),
-              decoration: BoxDecoration(
-                color: cs.surfaceContainerHighest.withOpacity(0.6),
-                border: Border.all(color: cs.outlineVariant),
-                borderRadius: BorderRadius.circular(context.rr(10)),
+  Widget _buildTextField(
+    BuildContext context, {
+    required TextEditingController controller,
+    required String label,
+    required String hint,
+    required IconData icon,
+    TextInputType keyboardType = TextInputType.text,
+    List<TextInputFormatter>? inputFormatters,
+    String? Function(String?)? validator,
+    ValueChanged<String>? onChanged,
+    bool isRequired = false,
+  }) {
+    final cs = Theme.of(context).colorScheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: context.sp(13),
+                color: cs.onSurface,
               ),
-              child: Text(
-                'INV0-00000${invoices.length + 1}',
+            ),
+            if (isRequired) ...[
+              const SizedBox(width: 3),
+              Text('*',
+                  style: TextStyle(color: cs.error, fontSize: context.sp(13))),
+            ],
+          ],
+        ),
+        SizedBox(height: context.rh(7)),
+        TextFormField(
+          controller: controller,
+          validator: validator,
+          keyboardType: keyboardType,
+          inputFormatters: inputFormatters,
+          onChanged: onChanged,
+          style: TextStyle(fontSize: context.sp(14)),
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: TextStyle(
+              color: cs.outline.withOpacity(0.5),
+              fontSize: context.sp(14),
+            ),
+            prefixIcon: Icon(icon, color: cs.tertiary, size: context.sp(19)),
+            filled: true,
+            fillColor: cs.surfaceContainerLowest,
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide(color: cs.outlineVariant.withOpacity(0.6)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide(color: cs.primary, width: 1.6),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide(color: cs.error),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide(color: cs.error, width: 1.6),
+            ),
+            contentPadding: EdgeInsets.symmetric(
+              horizontal: context.rw(14),
+              vertical: context.rh(13),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ──────────────────────────────────────────────────────────────────
+  //  Readonly Field (số hóa đơn)
+  // ──────────────────────────────────────────────────────────────────
+
+  Widget _buildReadonlyField(
+    BuildContext context, {
+    required String label,
+    required String value,
+    required IconData icon,
+  }) {
+    final cs = Theme.of(context).colorScheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: context.sp(13),
+            color: cs.onSurface,
+          ),
+        ),
+        SizedBox(height: context.rh(7)),
+        Container(
+          width: double.infinity,
+          padding: EdgeInsets.symmetric(
+              horizontal: context.rw(14), vertical: context.rh(13)),
+          decoration: BoxDecoration(
+            color: cs.surfaceContainerHighest.withOpacity(0.6),
+            border: Border.all(color: cs.outlineVariant.withOpacity(0.6)),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Row(
+            children: [
+              Icon(icon, color: cs.tertiary, size: context.sp(19)),
+              SizedBox(width: context.rw(10)),
+              Text(
+                value,
                 style: TextStyle(
                   fontSize: context.sp(14),
                   fontWeight: FontWeight.w500,
                   color: cs.onSurfaceVariant,
                 ),
               ),
-            ),
-          ),
-          SizedBox(height: context.rh(16)),
-          Row(
-            children: [
-              Expanded(
-                child: _LabeledField(
-                  label: 'Ngày',
-                  child: _TappableField(
-                    value: DateFormat('dd/MM/yyyy').format(_invoiceDate),
-                    icon: Icons.calendar_today_rounded,
-                    onTap: _selectDate,
-                    cs: cs,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _LabeledField(
-                  label: 'Trạng Thái',
-                  child: _StyledDropdown<String>(
-                    value: _status,
-                    items: _kStatuses,
-                    onChanged: (v) => setState(() => _status = v ?? 'Nhập'),
-                    cs: cs,
-                  ),
-                ),
-              ),
             ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
-  Widget _buildCustomerSection(ColorScheme cs, List<Customer> customers) {
-    return _Card(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Chọn Khách Hàng',
-                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-              ),
-              TextButton(
-                onPressed: () {
-                  // TODO: Navigate to add new customer
-                },
-                style: TextButton.styleFrom(
-                  padding: EdgeInsets.zero,
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-                child: Text(
-                  'Thêm mới',
-                  style: TextStyle(
-                    color: cs.primary,
-                    fontSize: context.sp(12),
-                    fontWeight: FontWeight.w600,
+  // ──────────────────────────────────────────────────────────────────
+  //  Date Field
+  // ──────────────────────────────────────────────────────────────────
+
+  Widget _buildDateField(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Ngày',
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: context.sp(13),
+            color: cs.onSurface,
+          ),
+        ),
+        SizedBox(height: context.rh(7)),
+        GestureDetector(
+          onTap: _selectDate,
+          child: Container(
+            padding: EdgeInsets.symmetric(
+                horizontal: context.rw(14), vertical: context.rh(13)),
+            decoration: BoxDecoration(
+              color: cs.surfaceContainerLowest,
+              border: Border.all(color: cs.outlineVariant.withOpacity(0.6)),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.calendar_today_rounded,
+                    color: cs.tertiary, size: context.sp(19)),
+                SizedBox(width: context.rw(10)),
+                Expanded(
+                  child: Text(
+                    DateFormat('dd/MM/yyyy').format(_invoiceDate),
+                    style: TextStyle(fontSize: context.sp(14)),
                   ),
                 ),
-              ),
-            ],
-          ),
-          SizedBox(height: context.rh(8)),
-          _StyledDropdown<Customer?>(
-            value: _selectedCustomer,
-            items: [null, ...customers],
-            hint: 'Tìm và chọn khách hàng',
-            labelBuilder: (c) => c?.name ?? 'Tìm và chọn khách hàng',
-            onChanged: _onCustomerSelected,
-            cs: cs,
-          ),
-          SizedBox(height: context.rh(16)),
-          Row(
-            children: [
-              Expanded(
-                child: _LabeledField(
-                  label: 'Tên Khách Hàng',
-                  child: _StyledTextFormField(
-                    controller: _nameController,
-                    hint: 'Nhập tên khách hàng',
-                    validator: (v) =>
-                    v?.trim().isEmpty ?? true ? 'Vui lòng nhập tên' : null,
-                    cs: cs,
-                  ),
-                ),
-              ),
-              SizedBox(width: context.rw(12)),
-              Expanded(
-                child: _LabeledField(
-                  label: 'Điện Thoại',
-                  child: _StyledTextFormField(
-                    controller: _phoneController,
-                    hint: 'Số điện thoại',
-                    keyboardType: TextInputType.phone,
-                    cs: cs,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: context.rh(12)),
-          _LabeledField(
-            label: 'Địa Chỉ',
-            child: _StyledTextFormField(
-              controller: _addressController,
-              hint: 'Địa chỉ giao hàng',
-              cs: cs,
+              ],
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
-  Widget _buildProductsSection(ColorScheme cs, List<Product> products) {
-    final alreadyAddedIds = _lineItems.map((e) => e.product.id).toSet();
+  // ──────────────────────────────────────────────────────────────────
+  //  Dropdown Field
+  // ──────────────────────────────────────────────────────────────────
 
-    return _Card(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  _lineItems.isEmpty
-                      ? 'Chưa có sản phẩm'
-                      : '${_lineItems.length} sản phẩm',
-                  style: TextStyle(
-                      color: cs.onSurfaceVariant, fontSize: context.sp(13)),
-                ),
-              ),
-              FilledButton.tonalIcon(
-                onPressed: () => _showProductPicker(products, alreadyAddedIds),
-                icon: Icon(Icons.add_rounded, size: context.sp(18)),
-                label: const Text('Thêm Sản Phẩm'),
-                style: FilledButton.styleFrom(
-                  padding: EdgeInsets.symmetric(
-                      horizontal: context.rw(14), vertical: context.rh(8)),
-                  textStyle: TextStyle(
-                      fontSize: context.sp(13), fontWeight: FontWeight.w600),
-                ),
-              ),
-            ],
+  Widget _buildDropdownField(
+    BuildContext context, {
+    required String label,
+    required IconData icon,
+    required String value,
+    required List<String> items,
+    required ValueChanged<String?> onChanged,
+  }) {
+    final cs = Theme.of(context).colorScheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: context.sp(13),
+            color: cs.onSurface,
           ),
-          const SizedBox(height: 12),
-          if (_lineItems.isEmpty)
-            Center(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                child: Column(
-                  children: [
-                    Icon(Icons.inventory_2_outlined,
-                        size: 48, color: cs.outlineVariant),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Nhấn "Thêm Sản Phẩm" để bắt đầu',
-                      style: TextStyle(
-                          color: cs.onSurfaceVariant, fontSize: 13),
-                    ),
-                  ],
-                ),
-              ),
-            )
-          else ...[
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-              decoration: BoxDecoration(
-                color: cs.surfaceContainerHighest.withOpacity(0.5),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                children: [
-                  const Expanded(
-                    flex: 4,
-                    child: Text('Sản Phẩm',
-                        style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 0.5)),
-                  ),
-                  const Expanded(
-                    flex: 3,
-                    child: Text('SL / Đơn Giá',
-                        style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 0.5)),
-                  ),
-                  Expanded(
-                    flex: 2,
+        ),
+        SizedBox(height: context.rh(7)),
+        DropdownButtonFormField<String>(
+          value: value,
+          isExpanded: true,
+          decoration: InputDecoration(
+            prefixIcon: Icon(icon, color: cs.tertiary, size: context.sp(19)),
+            filled: true,
+            fillColor: cs.surfaceContainerLowest,
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide(color: cs.outlineVariant.withOpacity(0.6)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide(color: cs.primary, width: 1.6),
+            ),
+            contentPadding: EdgeInsets.symmetric(
+              horizontal: context.rw(14),
+              vertical: context.rh(13),
+            ),
+          ),
+          style: TextStyle(fontSize: context.sp(14), color: cs.onSurface),
+          items: items
+              .map((e) => DropdownMenuItem(
+                    value: e,
+                    child: Text(e, style: TextStyle(fontSize: context.sp(13))),
+                  ))
+              .toList(),
+          onChanged: onChanged,
+        ),
+      ],
+    );
+  }
+
+  // ──────────────────────────────────────────────────────────────────
+  //  Customer Dropdown
+  // ──────────────────────────────────────────────────────────────────
+
+  Widget _buildCustomerDropdown(
+      BuildContext context, List<Customer> customers) {
+    final cs = Theme.of(context).colorScheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Chọn Khách Hàng',
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: context.sp(13),
+            color: cs.onSurface,
+          ),
+        ),
+        SizedBox(height: context.rh(7)),
+        DropdownButtonFormField<Customer?>(
+          value: _selectedCustomer,
+          isExpanded: true,
+          hint: Text(
+            'Tìm và chọn khách hàng',
+            style: TextStyle(
+                color: cs.outline.withOpacity(0.5), fontSize: context.sp(14)),
+          ),
+          decoration: InputDecoration(
+            prefixIcon: Icon(Icons.search_rounded,
+                color: cs.tertiary, size: context.sp(19)),
+            filled: true,
+            fillColor: cs.surfaceContainerLowest,
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide(color: cs.outlineVariant.withOpacity(0.6)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide(color: cs.primary, width: 1.6),
+            ),
+            contentPadding: EdgeInsets.symmetric(
+              horizontal: context.rw(14),
+              vertical: context.rh(13),
+            ),
+          ),
+          style: TextStyle(fontSize: context.sp(14), color: cs.onSurface),
+          items: [null, ...customers]
+              .map((c) => DropdownMenuItem<Customer?>(
+                    value: c,
                     child: Text(
-                      'Thành Tiền',
-                      textAlign: TextAlign.right,
-                      style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.5,
-                          color: cs.primary),
+                      c?.name ?? 'Tìm và chọn khách hàng',
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontSize: context.sp(13)),
                     ),
-                  ),
-                  const SizedBox(width: 32),
-                ],
+                  ))
+              .toList(),
+          onChanged: _onCustomerSelected,
+        ),
+      ],
+    );
+  }
+
+  // ──────────────────────────────────────────────────────────────────
+  //  Product List
+  // ──────────────────────────────────────────────────────────────────
+
+  Widget _buildProductList(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    if (_lineItems.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: context.rh(16)),
+          child: Column(
+            children: [
+              Icon(Icons.inventory_2_outlined,
+                  size: context.sp(44), color: cs.outlineVariant),
+              SizedBox(height: context.rh(8)),
+              Text(
+                'Nhấn "Thêm" để thêm sản phẩm',
+                style: TextStyle(
+                    color: cs.onSurfaceVariant, fontSize: context.sp(13)),
               ),
-            ),
-            const SizedBox(height: 4),
-            ..._lineItems.asMap().entries.map((entry) {
-              return _LineItemRow(
-                key: ValueKey(entry.value.product.id),
-                item: entry.value,
-                currency: _currencyFormatter,
-                cs: cs,
-                onQtyChanged: (qty) => setState(() => entry.value.qty = qty),
-                onPriceChanged: (price) =>
-                    setState(() => entry.value.unitPrice = price),
-                onDelete: () => _removeItem(entry.key),
-              );
-            }),
-          ],
-        ],
-      ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      children: [
+        Container(
+          padding: EdgeInsets.symmetric(
+              horizontal: context.rw(8), vertical: context.rh(6)),
+          decoration: BoxDecoration(
+            color: cs.surfaceContainerHighest.withOpacity(0.5),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                flex: 4,
+                child: Text(
+                  'Sản Phẩm',
+                  style: TextStyle(
+                      fontSize: context.sp(11),
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.5),
+                ),
+              ),
+              Expanded(
+                flex: 3,
+                child: Text(
+                  'SL / Đơn Giá',
+                  style: TextStyle(
+                      fontSize: context.sp(11),
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.5),
+                ),
+              ),
+              Expanded(
+                flex: 2,
+                child: Text(
+                  'Thành Tiền',
+                  textAlign: TextAlign.right,
+                  style: TextStyle(
+                      fontSize: context.sp(11),
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.5,
+                      color: cs.primary),
+                ),
+              ),
+              const SizedBox(width: 32),
+            ],
+          ),
+        ),
+        SizedBox(height: context.rh(4)),
+        ..._lineItems.asMap().entries.map((entry) => _LineItemRow(
+              key: ValueKey(entry.value.product.id),
+              item: entry.value,
+              currency: _currencyFormatter,
+              cs: cs,
+              onQtyChanged: (qty) => setState(() => entry.value.qty = qty),
+              onPriceChanged: (price) =>
+                  setState(() => entry.value.unitPrice = price),
+              onDelete: () => _removeItem(entry.key),
+            )),
+      ],
     );
   }
 
@@ -586,128 +952,89 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen>
     );
   }
 
-  Widget _buildSummarySection(ColorScheme cs) {
+  // ──────────────────────────────────────────────────────────────────
+  //  Summary Block
+  // ──────────────────────────────────────────────────────────────────
+
+  Widget _buildSummaryBlock(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     final isDebtState = _hasDebt;
     final changeOrDebt = isDebtState ? _debt : _change;
 
-    return _Card(
+    return Container(
+      padding: EdgeInsets.all(context.rw(16)),
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerHighest.withOpacity(0.4),
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: Column(
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: _LabeledField(
-                  label: 'Giảm Giá (VNĐ)',
-                  child: _StyledTextFormField(
-                    hint: '0',
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    onChanged: (v) =>
-                        setState(() => _discount = double.tryParse(v) ?? 0),
-                    cs: cs,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _LabeledField(
-                  label: 'Tiền Nhận (VNĐ)',
-                  child: _StyledTextFormField(
-                    hint: '0',
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    onChanged: (v) =>
-                        setState(() => _cashReceived = double.tryParse(v) ?? 0),
-                    cs: cs,
-                  ),
-                ),
-              ),
-            ],
+          _SummaryRow(
+            label: 'Tạm tính',
+            value: '${_currencyFormatter.format(_subtotal)} đ',
+            cs: cs,
           ),
-          SizedBox(height: context.rh(20)),
-          Container(
-            padding: EdgeInsets.all(context.rw(16)),
+          const Divider(height: 20),
+          _SummaryRow(
+            label: 'Giảm giá',
+            value: '- ${_currencyFormatter.format(_discount)} đ',
+            valueColor: cs.error,
+            cs: cs,
+          ),
+          const Divider(height: 20),
+          _SummaryRow(
+            label: 'Tổng cộng',
+            value: '${_currencyFormatter.format(_total)} đ',
+            isBold: true,
+            cs: cs,
+          ),
+          const Divider(height: 20),
+          _SummaryRow(
+            label: 'Đã thanh toán',
+            value: '${_currencyFormatter.format(_cashReceived)} đ',
+            valueColor: Colors.green,
+            cs: cs,
+          ),
+          SizedBox(height: context.rh(12)),
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 250),
+            padding: EdgeInsets.symmetric(
+                horizontal: context.rw(14), vertical: context.rh(12)),
             decoration: BoxDecoration(
-              color: cs.surfaceContainerHighest.withOpacity(0.4),
-              borderRadius: BorderRadius.circular(context.rr(16)),
+              color: isDebtState
+                  ? cs.errorContainer.withOpacity(0.45)
+                  : Colors.green.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(12),
             ),
-            child: Column(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _SummaryRow(
-                  label: 'Tạm tính',
-                  value: '${_currencyFormatter.format(_subtotal)} đ',
-                  cs: cs,
-                ),
-                const Divider(height: 20),
-                _SummaryRow(
-                  label: 'Giảm giá',
-                  value: '- ${_currencyFormatter.format(_discount)} đ',
-                  valueColor: cs.error,
-                  cs: cs,
-                ),
-                const Divider(height: 20),
-                _SummaryRow(
-                  label: 'Tổng cộng',
-                  value: '${_currencyFormatter.format(_total)} đ',
-                  isBold: true,
-                  cs: cs,
-                ),
-                const Divider(height: 20),
-                _SummaryRow(
-                  label: 'Đã thanh toán',
-                  value: '${_currencyFormatter.format(_cashReceived)} đ',
-                  valueColor: Colors.green,
-                  cs: cs,
-                ),
-                const SizedBox(height: 12),
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 250),
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 14, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: isDebtState
-                        ? cs.errorContainer.withOpacity(0.45)
-                        : Colors.green.withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(
-                            isDebtState
-                                ? Icons.arrow_downward_rounded
-                                : Icons.arrow_upward_rounded,
-                            size: 16,
-                            color: isDebtState
-                                ? cs.error
-                                : Colors.green.shade700,
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            isDebtState ? 'Tiền thiếu' : 'Tiền thừa',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 14,
-                              color: isDebtState
-                                  ? cs.error
-                                  : Colors.green.shade700,
-                            ),
-                          ),
-                        ],
+                Row(
+                  children: [
+                    Icon(
+                      isDebtState
+                          ? Icons.arrow_downward_rounded
+                          : Icons.arrow_upward_rounded,
+                      size: context.sp(16),
+                      color: isDebtState ? cs.error : Colors.green.shade700,
+                    ),
+                    SizedBox(width: context.rw(6)),
+                    Text(
+                      isDebtState ? 'Tiền thiếu' : 'Tiền thừa',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: context.sp(14),
+                        color: isDebtState ? cs.error : Colors.green.shade700,
                       ),
-                      Text(
-                        '${_currencyFormatter.format(changeOrDebt)} đ',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
-                          color: isDebtState
-                              ? cs.error
-                              : Colors.green.shade700,
-                        ),
-                      ),
-                    ],
+                    ),
+                  ],
+                ),
+                Text(
+                  '${_currencyFormatter.format(changeOrDebt)} đ',
+                  style: TextStyle(
+                    fontSize: context.sp(18),
+                    fontWeight: FontWeight.w800,
+                    color: isDebtState ? cs.error : Colors.green.shade700,
                   ),
                 ),
               ],
@@ -718,17 +1045,34 @@ class _InvoiceFormScreenState extends State<InvoiceFormScreen>
     );
   }
 
-  Widget _buildSectionLabel(String title) {
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-          context.rw(20), context.rh(16), context.rw(16), context.rh(8)),
-      child: Text(
-        title.toUpperCase(),
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-          fontWeight: FontWeight.bold,
-          letterSpacing: 1.1,
-          fontSize: context.sp(11),
-          color: Theme.of(context).colorScheme.outline,
+  // ──────────────────────────────────────────────────────────────────
+  //  Bottom Save Bar  (same pattern as CustomerFormScreen)
+  // ──────────────────────────────────────────────────────────────────
+
+  Widget _buildBottomSave(BuildContext context, InvoiceViewmodel vm) {
+    final cs = Theme.of(context).colorScheme;
+    return Container(
+      decoration: BoxDecoration(
+        color: cs.surface,
+        border:
+            Border(top: BorderSide(color: cs.outlineVariant.withOpacity(0.3))),
+        boxShadow: [
+          BoxShadow(
+            color: cs.shadow.withOpacity(0.06),
+            blurRadius: 12,
+            offset: const Offset(0, -3),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(
+              context.rw(16), context.rh(12), context.rw(16), context.rh(12)),
+          child: AppButton(
+            text: context.l10n.invoice_save,
+            isLoading: vm.isLoading,
+            onPressed: _submitForm,
+          ),
         ),
       ),
     );
@@ -811,8 +1155,7 @@ class _LineItemRowState extends State<_LineItemRow> {
                 Text(
                   item.product.name,
                   style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: context.sp(13.5)),
+                      fontWeight: FontWeight.w600, fontSize: context.sp(13.5)),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -899,22 +1242,22 @@ class _ProductPickerSheetState extends State<_ProductPickerSheet> {
   String _selectedCategory = 'Tất cả';
 
   List<String> get _categories => [
-    'Tất cả',
-    ...widget.products
-        .map((p) => p.category ?? '')
-        .where((c) => c.isNotEmpty)
-        .toSet()
-        .toList()
-      ..sort(),
-  ];
+        'Tất cả',
+        ...widget.products
+            .map((p) => p.category ?? '')
+            .where((c) => c.isNotEmpty)
+            .toSet()
+            .toList()
+          ..sort(),
+      ];
 
   List<Product> get _filteredProducts => widget.products.where((p) {
-    final matchCat = _selectedCategory == 'Tất cả' ||
-        p.category == _selectedCategory;
-    final matchSearch = _searchText.isEmpty ||
-        p.name.toLowerCase().contains(_searchText.toLowerCase());
-    return matchCat && matchSearch;
-  }).toList();
+        final matchCat =
+            _selectedCategory == 'Tất cả' || p.category == _selectedCategory;
+        final matchSearch = _searchText.isEmpty ||
+            p.name.toLowerCase().contains(_searchText.toLowerCase());
+        return matchCat && matchSearch;
+      }).toList();
 
   @override
   Widget build(BuildContext context) {
@@ -928,8 +1271,7 @@ class _ProductPickerSheetState extends State<_ProductPickerSheet> {
       builder: (context, scrollController) => Container(
         decoration: BoxDecoration(
           color: cs.surface,
-          borderRadius:
-          const BorderRadius.vertical(top: Radius.circular(24)),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         ),
         child: Column(
           children: [
@@ -963,18 +1305,15 @@ class _ProductPickerSheetState extends State<_ProductPickerSheet> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: EdgeInsets.symmetric(horizontal: context.rw(16)),
               child: TextField(
                 decoration: InputDecoration(
                   hintText: 'Tìm sản phẩm...',
-                  prefixIcon:
-                  Icon(Icons.search_rounded, size: context.sp(20)),
+                  prefixIcon: Icon(Icons.search_rounded, size: context.sp(20)),
                   border: OutlineInputBorder(
-                      borderRadius:
-                      BorderRadius.circular(context.rr(12))),
+                      borderRadius: BorderRadius.circular(context.rr(12))),
                   contentPadding: EdgeInsets.symmetric(
-                      horizontal: context.rw(12),
-                      vertical: context.rh(10)),
+                      horizontal: context.rw(12), vertical: context.rh(10)),
                   isDense: true,
                 ),
                 onChanged: (v) => setState(() => _searchText = v),
@@ -987,18 +1326,15 @@ class _ProductPickerSheetState extends State<_ProductPickerSheet> {
                 scrollDirection: Axis.horizontal,
                 padding: EdgeInsets.symmetric(horizontal: context.rw(16)),
                 itemCount: _categories.length,
-                separatorBuilder: (_, __) =>
-                    SizedBox(width: context.rw(8)),
+                separatorBuilder: (_, __) => SizedBox(width: context.rw(8)),
                 itemBuilder: (_, i) {
                   final cat = _categories[i];
                   return ChoiceChip(
-                    label: Text(cat,
-                        style: TextStyle(fontSize: context.sp(12))),
+                    label:
+                        Text(cat, style: TextStyle(fontSize: context.sp(12))),
                     selected: _selectedCategory == cat,
-                    onSelected: (_) =>
-                        setState(() => _selectedCategory = cat),
-                    materialTapTargetSize:
-                    MaterialTapTargetSize.shrinkWrap,
+                    onSelected: (_) => setState(() => _selectedCategory = cat),
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   );
                 },
               ),
@@ -1008,80 +1344,73 @@ class _ProductPickerSheetState extends State<_ProductPickerSheet> {
             Expanded(
               child: _filteredProducts.isEmpty
                   ? Center(
-                child: Text(
-                  'Không tìm thấy sản phẩm',
-                  style:
-                  TextStyle(color: cs.onSurfaceVariant),
-                ),
-              )
-                  : ListView.separated(
-                controller: scrollController,
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 8, vertical: 4),
-                itemCount: _filteredProducts.length,
-                separatorBuilder: (_, __) => Divider(
-                    height: 1,
-                    color: cs.outlineVariant.withOpacity(0.4)),
-                itemBuilder: (_, i) {
-                  final product = _filteredProducts[i];
-                  final isAdded =
-                  widget.alreadyAdded.contains(product.id);
-
-                  return ListTile(
-                    dense: true,
-                    title: Text(
-                      product.name,
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: context.sp(13),
-                        color: isAdded
-                            ? cs.outline
-                            : cs.onSurface,
+                      child: Text(
+                        'Không tìm thấy sản phẩm',
+                        style: TextStyle(color: cs.onSurfaceVariant),
                       ),
-                    ),
-                    subtitle: Text(
-                      '${product.category ?? 'Chưa phân loại'} · ${product.unit ?? ''}',
-                      style: TextStyle(
-                          fontSize: context.sp(11.5),
-                          color: cs.outline),
-                    ),
-                    trailing: isAdded
-                        ? Chip(
-                      label: Text('Đã thêm',
-                          style: TextStyle(
-                              fontSize: context.sp(11))),
-                      padding: EdgeInsets.zero,
-                      visualDensity: VisualDensity.compact,
                     )
-                        : Column(
-                      mainAxisAlignment:
-                      MainAxisAlignment.center,
-                      crossAxisAlignment:
-                      CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          '${currency.format(product.purchasePrice)} đ',
-                          style: TextStyle(
-                            fontSize: context.sp(13),
-                            fontWeight: FontWeight.bold,
-                            color: cs.primary,
+                  : ListView.separated(
+                      controller: scrollController,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
+                      itemCount: _filteredProducts.length,
+                      separatorBuilder: (_, __) => Divider(
+                          height: 1, color: cs.outlineVariant.withOpacity(0.4)),
+                      itemBuilder: (_, i) {
+                        final product = _filteredProducts[i];
+                        final isAdded =
+                            widget.alreadyAdded.contains(product.id);
+
+                        return ListTile(
+                          dense: true,
+                          title: Text(
+                            product.name,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: context.sp(13),
+                              color: isAdded ? cs.outline : cs.onSurface,
+                            ),
                           ),
-                        ),
-                        SizedBox(height: context.rh(2)),
-                        Icon(Icons.add_circle_rounded,
-                            size: context.sp(20),
-                            color: Colors.green),
-                      ],
+                          subtitle: Text(
+                            '${product.category ?? 'Chưa phân loại'} · ${product.unit ?? ''}',
+                            style: TextStyle(
+                                fontSize: context.sp(11.5), color: cs.outline),
+                          ),
+                          trailing: isAdded
+                              ? Chip(
+                                  label: Text('Đã thêm',
+                                      style:
+                                          TextStyle(fontSize: context.sp(11))),
+                                  padding: EdgeInsets.zero,
+                                  visualDensity: VisualDensity.compact,
+                                )
+                              : Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    Text(
+                                      '${currency.format(product.purchasePrice)} đ',
+                                      style: TextStyle(
+                                        fontSize: context.sp(13),
+                                        fontWeight: FontWeight.bold,
+                                        color: cs.primary,
+                                      ),
+                                    ),
+                                    SizedBox(height: context.rh(2)),
+                                    Icon(Icons.add_circle_rounded,
+                                        size: context.sp(20),
+                                        color: Colors.green),
+                                  ],
+                                ),
+                          onTap: isAdded
+                              ? null
+                              : () {
+                                  widget.onProductSelected(product);
+                                  Navigator.pop(context);
+                                },
+                        );
+                      },
                     ),
-                    onTap: isAdded
-                        ? null
-                        : () {
-                      widget.onProductSelected(product);
-                      Navigator.pop(context);
-                    },
-                  );
-                },
-              ),
             ),
           ],
         ),
@@ -1091,194 +1420,6 @@ class _ProductPickerSheetState extends State<_ProductPickerSheet> {
 }
 
 // ====================== REUSABLE COMPONENTS ======================
-
-class _Card extends StatelessWidget {
-  const _Card({required this.child});
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: cs.surface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: cs.outlineVariant.withOpacity(0.5)),
-        boxShadow: [
-          BoxShadow(
-            color: cs.shadow.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: child,
-    );
-  }
-}
-
-class _LabeledField extends StatelessWidget {
-  const _LabeledField({required this.label, required this.child});
-  final String label;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label,
-            style:
-            const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-        const SizedBox(height: 6),
-        child,
-      ],
-    );
-  }
-}
-
-class _StyledTextFormField extends StatelessWidget {
-  const _StyledTextFormField({
-    this.controller,
-    required this.hint,
-    required this.cs,
-    this.validator,
-    this.keyboardType,
-    this.inputFormatters,
-    this.onChanged,
-  });
-
-  final TextEditingController? controller;
-  final String hint;
-  final ColorScheme cs;
-  final FormFieldValidator<String>? validator;
-  final TextInputType? keyboardType;
-  final List<TextInputFormatter>? inputFormatters;
-  final ValueChanged<String>? onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return TextFormField(
-      controller: controller,
-      validator: validator,
-      keyboardType: keyboardType,
-      inputFormatters: inputFormatters,
-      onChanged: onChanged,
-      style: const TextStyle(fontSize: 14),
-      decoration: InputDecoration(
-        hintText: hint,
-        hintStyle: TextStyle(color: cs.outlineVariant, fontSize: 13),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide(color: cs.outlineVariant),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide(color: cs.primary, width: 1.6),
-        ),
-        contentPadding:
-        const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        isDense: true,
-      ),
-    );
-  }
-}
-
-class _StyledDropdown<T> extends StatelessWidget {
-  const _StyledDropdown({
-    required this.value,
-    required this.items,
-    required this.onChanged,
-    required this.cs,
-    this.labelBuilder,
-    this.hint,
-  });
-
-  final T value;
-  final List<T> items;
-  final String Function(T)? labelBuilder;
-  final ValueChanged<T?> onChanged;
-  final ColorScheme cs;
-  final String? hint;
-
-  @override
-  Widget build(BuildContext context) {
-    return DropdownButtonFormField<T>(
-      value: value,
-      isExpanded: true,
-      hint: hint != null
-          ? Text(hint!,
-          style: TextStyle(color: cs.outlineVariant, fontSize: 13))
-          : null,
-      decoration: InputDecoration(
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide(color: cs.outlineVariant),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide(color: cs.primary, width: 1.6),
-        ),
-        contentPadding:
-        const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        isDense: true,
-      ),
-      style: const TextStyle(fontSize: 13, color: Colors.black87),
-      items: items
-          .map((e) => DropdownMenuItem<T>(
-        value: e,
-        child: Text(
-          labelBuilder?.call(e) ?? e.toString(),
-          overflow: TextOverflow.ellipsis,
-          maxLines: 1,
-          style: const TextStyle(fontSize: 13),
-        ),
-      ))
-          .toList(),
-      onChanged: onChanged,
-    );
-  }
-}
-
-class _TappableField extends StatelessWidget {
-  const _TappableField({
-    required this.value,
-    required this.icon,
-    required this.onTap,
-    required this.cs,
-  });
-
-  final String value;
-  final IconData icon;
-  final VoidCallback onTap;
-  final ColorScheme cs;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-        decoration: BoxDecoration(
-          border: Border.all(color: cs.outlineVariant),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Row(
-          children: [
-            Expanded(
-                child:
-                Text(value, style: const TextStyle(fontSize: 14))),
-            Icon(icon, size: 18, color: cs.outline),
-          ],
-        ),
-      ),
-    );
-  }
-}
 
 class _MiniNumberField extends StatelessWidget {
   const _MiniNumberField({
@@ -1316,8 +1457,7 @@ class _MiniNumberField extends StatelessWidget {
           borderRadius: BorderRadius.circular(8),
           borderSide: BorderSide(color: cs.primary),
         ),
-        contentPadding:
-        const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         isDense: true,
       ),
     );

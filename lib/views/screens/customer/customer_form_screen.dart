@@ -5,6 +5,7 @@ import 'package:manager/core/extensions/l10n_extension.dart';
 import 'package:manager/core/utils/app_responsive.dart';
 import 'package:manager/data/models/customer.dart';
 import 'package:manager/viewmodels/customer_viewmodel.dart';
+import 'package:manager/views/widgets/alerts/top_alert.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 
@@ -51,7 +52,7 @@ class _CustomerFormScreenState extends State<CustomerFormScreen>
     _fadeAnim = CurvedAnimation(parent: _animController, curve: Curves.easeIn);
     _slideAnim = Tween<Offset>(begin: const Offset(0, 0.05), end: Offset.zero)
         .animate(CurvedAnimation(
-        parent: _animController, curve: Curves.easeOutCubic));
+            parent: _animController, curve: Curves.easeOutCubic));
 
     if (_isEditMode && widget.customer != null) {
       final c = widget.customer!;
@@ -103,30 +104,30 @@ class _CustomerFormScreenState extends State<CustomerFormScreen>
 
       if (_isEditMode) {
         success =
-        await customerVM.updateCustomer(customerData.id, customerData);
+            await customerVM.updateCustomer(customerData.id, customerData);
       } else {
         success = await customerVM.createCustomer(customerData);
       }
 
       if (mounted) {
         if (success) {
-          AppSnackbar.showSuccess(
+          TopAlert.success(
             context,
             _isEditMode
-                ? context.l10n.action_success(context.l10n.common_edit,
-                context.l10n.customer.toLowerCase())
+                ? context.l10n.action_success(context.l10n.common_update,
+                    context.l10n.customer.toLowerCase())
                 : context.l10n.action_success(context.l10n.common_add,
-                context.l10n.customer.toLowerCase()),
+                    context.l10n.customer.toLowerCase()),
           );
           context.pop();
         } else {
-          AppSnackbar.showError(
+          TopAlert.error(
             context,
             _isEditMode
-                ? context.l10n.action_failed(context.l10n.common_edit,
-                context.l10n.customer.toLowerCase())
+                ? context.l10n.action_failed(context.l10n.common_update,
+                    context.l10n.customer.toLowerCase())
                 : context.l10n.action_failed(context.l10n.common_add,
-                context.l10n.customer.toLowerCase()),
+                    context.l10n.customer.toLowerCase()),
           );
         }
       }
@@ -142,137 +143,137 @@ class _CustomerFormScreenState extends State<CustomerFormScreen>
       backgroundColor: cs.surfaceContainerLowest,
       body: !_isPageReady
           ? Center(
-        child: LoadingAnimationWidget.dotsTriangle(
-          color: cs.primary,
-          size: context.rw(32),
-        ),
-      )
+              child: LoadingAnimationWidget.dotsTriangle(
+                color: cs.primary,
+                size: context.rw(32),
+              ),
+            )
           : FadeTransition(
-        opacity: _fadeAnim,
-        child: SlideTransition(
-          position: _slideAnim,
-          child: CustomScrollView(
-            physics: const BouncingScrollPhysics(),
-            slivers: [
-              AppSliverAppBar(
-                title: _isEditMode
-                    ? context.l10n.customer_edit
-                    : context.l10n.customer_add,
-                showBackButton: true,
-                height: 80,
-              ),
-              SliverPadding(
-                padding: EdgeInsets.fromLTRB(
-                  context.rw(16),
-                  context.rh(24),
-                  context.rw(16),
-                  context.rh(120),
-                ),
-                sliver: SliverToBoxAdapter(
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildSection(
-                          context,
-                          title: "Thông tin liên hệ",
-                          icon: Icons.person_pin_rounded,
-                          children: [
-                            _buildTextField(
-                              context,
-                              controller: _nameController,
-                              label: 'Tên khách hàng',
-                              hint: 'Nhập họ và tên',
-                              icon: Icons.person_outline_rounded,
-                              isRequired: true,
-                              validator: (v) => v!.trim().isEmpty
-                                  ? 'Vui lòng nhập tên'
-                                  : null,
-                            ),
-                            SizedBox(height: context.rh(14)),
-                            _buildTextField(
-                              context,
-                              controller: _emailController,
-                              label: 'Email',
-                              hint: 'example@gmail.com',
-                              icon: Icons.email_outlined,
-                              isRequired: true,
-                              keyboardType: TextInputType.emailAddress,
-                              validator: (v) {
-                                if (v!.trim().isEmpty)
-                                  return 'Vui lòng nhập email';
-                                if (!RegExp(
-                                    r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
-                                    .hasMatch(v)) {
-                                  return 'Email không hợp lệ';
-                                }
-                                return null;
-                              },
-                            ),
-                            SizedBox(height: context.rh(14)),
-                            _buildTextField(
-                              context,
-                              controller: _phoneController,
-                              label: 'Số điện thoại',
-                              hint: '0901 234 567',
-                              icon: Icons.phone_android_rounded,
-                              keyboardType: TextInputType.phone,
-                            ),
-                          ],
-                        ),
-                        SizedBox(height: context.rh(16)),
-                        _buildSection(
-                          context,
-                          title: "Địa chỉ",
-                          icon: Icons.location_on_rounded,
-                          children: [
-                            _buildTextField(
-                              context,
-                              controller: _addressController,
-                              label: 'Địa chỉ chi tiết',
-                              hint: 'Số nhà, tên đường...',
-                              icon: Icons.home_outlined,
-                            ),
-                            SizedBox(height: context.rh(14)),
-                            _buildTextField(
-                              context,
-                              controller: _cityController,
-                              label: 'Thành phố',
-                              hint: 'Ví dụ: Hồ Chí Minh',
-                              icon: Icons.map_outlined,
-                            ),
-                          ],
-                        ),
-                        SizedBox(height: context.rh(16)),
-                        _buildSection(
-                          context,
-                          title: "Trạng thái",
-                          icon: Icons.toggle_on_rounded,
-                          children: [_buildStatusToggle(context)],
-                        ),
-                        if (_isEditMode &&
-                            widget.customer?.createdAt != null) ...[
-                          SizedBox(height: context.rh(16)),
-                          Center(
-                            child: Text(
-                              "Ngày tạo: ${DateFormat('dd/MM/yyyy').format(widget.customer!.createdAt!)}",
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodySmall
-                                  ?.copyWith(color: cs.outline),
-                            ),
-                          ),
-                        ],
-                      ],
+              opacity: _fadeAnim,
+              child: SlideTransition(
+                position: _slideAnim,
+                child: CustomScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  slivers: [
+                    AppSliverAppBar(
+                      title: _isEditMode
+                          ? context.l10n.customer_edit
+                          : context.l10n.customer_add,
+                      showBackButton: true,
+                      height: 80,
                     ),
-                  ),
+                    SliverPadding(
+                      padding: EdgeInsets.fromLTRB(
+                        context.rw(16),
+                        context.rh(24),
+                        context.rw(16),
+                        context.rh(120),
+                      ),
+                      sliver: SliverToBoxAdapter(
+                        child: Form(
+                          key: _formKey,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildSection(
+                                context,
+                                title: "Thông tin liên hệ",
+                                icon: Icons.person_pin_rounded,
+                                children: [
+                                  _buildTextField(
+                                    context,
+                                    controller: _nameController,
+                                    label: 'Tên khách hàng',
+                                    hint: 'Nhập họ và tên',
+                                    icon: Icons.person_outline_rounded,
+                                    isRequired: true,
+                                    validator: (v) => v!.trim().isEmpty
+                                        ? 'Vui lòng nhập tên'
+                                        : null,
+                                  ),
+                                  SizedBox(height: context.rh(14)),
+                                  _buildTextField(
+                                    context,
+                                    controller: _emailController,
+                                    label: 'Email',
+                                    hint: 'example@gmail.com',
+                                    icon: Icons.email_outlined,
+                                    isRequired: true,
+                                    keyboardType: TextInputType.emailAddress,
+                                    validator: (v) {
+                                      if (v!.trim().isEmpty)
+                                        return 'Vui lòng nhập email';
+                                      if (!RegExp(
+                                              r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
+                                          .hasMatch(v)) {
+                                        return 'Email không hợp lệ';
+                                      }
+                                      return null;
+                                    },
+                                  ),
+                                  SizedBox(height: context.rh(14)),
+                                  _buildTextField(
+                                    context,
+                                    controller: _phoneController,
+                                    label: 'Số điện thoại',
+                                    hint: '0901 234 567',
+                                    icon: Icons.phone_android_rounded,
+                                    keyboardType: TextInputType.phone,
+                                  ),
+                                ],
+                              ),
+                              SizedBox(height: context.rh(16)),
+                              _buildSection(
+                                context,
+                                title: "Địa chỉ",
+                                icon: Icons.location_on_rounded,
+                                children: [
+                                  _buildTextField(
+                                    context,
+                                    controller: _addressController,
+                                    label: 'Địa chỉ chi tiết',
+                                    hint: 'Số nhà, tên đường...',
+                                    icon: Icons.home_outlined,
+                                  ),
+                                  SizedBox(height: context.rh(14)),
+                                  _buildTextField(
+                                    context,
+                                    controller: _cityController,
+                                    label: 'Thành phố',
+                                    hint: 'Ví dụ: Hồ Chí Minh',
+                                    icon: Icons.map_outlined,
+                                  ),
+                                ],
+                              ),
+                              SizedBox(height: context.rh(16)),
+                              _buildSection(
+                                context,
+                                title: "Trạng thái",
+                                icon: Icons.toggle_on_rounded,
+                                children: [_buildStatusToggle(context)],
+                              ),
+                              if (_isEditMode &&
+                                  widget.customer?.createdAt != null) ...[
+                                SizedBox(height: context.rh(16)),
+                                Center(
+                                  child: Text(
+                                    "Ngày tạo: ${DateFormat('dd/MM/yyyy').format(widget.customer!.createdAt!)}",
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodySmall
+                                        ?.copyWith(color: cs.outline),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ),
-        ),
-      ),
+            ),
       bottomSheet: _isPageReady ? _buildBottomSave(context, customerVM) : null,
     );
   }
@@ -282,11 +283,11 @@ class _CustomerFormScreenState extends State<CustomerFormScreen>
   // ──────────────────────────────────────────────────────────────────
 
   Widget _buildSection(
-      BuildContext context, {
-        required String title,
-        required IconData icon,
-        required List<Widget> children,
-      }) {
+    BuildContext context, {
+    required String title,
+    required IconData icon,
+    required List<Widget> children,
+  }) {
     final cs = Theme.of(context).colorScheme;
     return Container(
       decoration: BoxDecoration(
@@ -312,10 +313,10 @@ class _CustomerFormScreenState extends State<CustomerFormScreen>
                 Container(
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
-                    color: cs.primaryContainer,
+                    color: cs.tertiaryContainer,
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Icon(icon, size: context.sp(15), color: cs.primary),
+                  child: Icon(icon, size: context.sp(15), color: cs.tertiary),
                 ),
                 SizedBox(width: context.rw(10)),
                 Text(
@@ -324,7 +325,7 @@ class _CustomerFormScreenState extends State<CustomerFormScreen>
                     fontSize: context.sp(11),
                     fontWeight: FontWeight.w800,
                     letterSpacing: 0.8,
-                    color: cs.primary,
+                    color: cs.tertiary,
                   ),
                 ),
               ],
@@ -348,15 +349,15 @@ class _CustomerFormScreenState extends State<CustomerFormScreen>
   // ──────────────────────────────────────────────────────────────────
 
   Widget _buildTextField(
-      BuildContext context, {
-        required TextEditingController controller,
-        required String label,
-        required String hint,
-        required IconData icon,
-        TextInputType keyboardType = TextInputType.text,
-        String? Function(String?)? validator,
-        bool isRequired = false,
-      }) {
+    BuildContext context, {
+    required TextEditingController controller,
+    required String label,
+    required String hint,
+    required IconData icon,
+    TextInputType keyboardType = TextInputType.text,
+    String? Function(String?)? validator,
+    bool isRequired = false,
+  }) {
     final cs = Theme.of(context).colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -392,7 +393,7 @@ class _CustomerFormScreenState extends State<CustomerFormScreen>
               color: cs.outline.withOpacity(0.5),
               fontSize: context.sp(14),
             ),
-            prefixIcon: Icon(icon, color: cs.primary, size: context.sp(19)),
+            prefixIcon: Icon(icon, color: cs.tertiary, size: context.sp(19)),
             filled: true,
             fillColor: cs.surfaceContainerLowest,
             enabledBorder: OutlineInputBorder(
@@ -504,7 +505,7 @@ class _CustomerFormScreenState extends State<CustomerFormScreen>
       decoration: BoxDecoration(
         color: cs.surface,
         border:
-        Border(top: BorderSide(color: cs.outlineVariant.withOpacity(0.3))),
+            Border(top: BorderSide(color: cs.outlineVariant.withOpacity(0.3))),
         boxShadow: [
           BoxShadow(
             color: cs.shadow.withOpacity(0.06),

@@ -167,13 +167,9 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   Widget _buildQuickActionsGrid() {
     final actions = [
-      _ActionItem('Bán hàng', Icons.point_of_sale_rounded,
-          const Color(0xFF3A6CF6), '/sales'),
-      _ActionItem('Nhập hàng', Icons.inventory_2_rounded,
-          const Color(0xFFE07B1A), '/pur'),
-      _ActionItem('Quản lý kho', Icons.warehouse_rounded,
+      _ActionItem(context.l10n.warehouse, Icons.warehouse_rounded,
           const Color(0xFF0FA37A), '/warehouses'),
-      _ActionItem('Chi nhánh', Icons.branding_watermark_rounded,
+      _ActionItem(context.l10n.branch, Icons.branding_watermark_rounded,
           const Color(0xFF0FA37A), '/branches'),
       _ActionItem('Công nợ', Icons.account_balance_wallet_rounded,
           const Color(0xFF7C3AED), '/debt'),

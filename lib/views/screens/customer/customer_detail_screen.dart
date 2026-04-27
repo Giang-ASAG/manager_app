@@ -7,6 +7,7 @@ import 'package:manager/core/utils/app_responsive.dart';
 import 'package:manager/data/models/customer.dart';
 import 'package:manager/viewmodels/customer_viewmodel.dart';
 import 'package:manager/views/widgets/action_bottom_buttons.dart';
+import 'package:manager/views/widgets/alerts/top_alert.dart';
 import 'package:manager/views/widgets/app_snackbar.dart';
 import 'package:manager/views/widgets/custom_popup.dart';
 
@@ -38,12 +39,14 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
       final success =
           await context.read<CustomerViewmodel>().deleteCustomer(c.id);
       if (mounted && success) {
-        AppSnackbar.showSuccess(context, "Đã xóa khách hàng ${c.name}");
+        TopAlert.success(
+            context,
+            context.l10n.action_success(context.l10n.common_delete,
+                context.l10n.customer.toLowerCase()));
         context.pop();
       }
     } catch (e) {
-      if (mounted)
-        AppSnackbar.showError(context, "Không thể xóa khách hàng này");
+      if (mounted) TopAlert.error(context, "Không thể xóa khách hàng này");
     } finally {
       if (mounted) setState(() => _isDeleting = false);
     }

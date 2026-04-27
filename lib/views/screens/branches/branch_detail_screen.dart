@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:manager/core/router/app_routes.dart';
-
 import 'package:manager/data/models/branch.dart';
 import 'package:manager/viewmodels/branch_viewmodel.dart';
 import 'package:manager/views/widgets/action_bottom_buttons.dart';
@@ -136,19 +135,6 @@ class _BranchDetailScreenState extends State<BranchDetailScreen> {
           ],
         ),
       ),
-
-      // ── Ngày tạo ─────────────────────────────────────────────
-      // if (b.createdAt != null)
-      //   SliverToBoxAdapter(
-      //     child: Padding(
-      //       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
-      //       child: Text(
-      //         'Ngày tạo: ${b.}',
-      //         style: textTheme.bodySmall?.copyWith(color: cs.outline),
-      //         textAlign: TextAlign.center,
-      //       ),
-      //     ),
-      //   ),
     ];
   }
 

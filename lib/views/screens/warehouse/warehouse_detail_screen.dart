@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:manager/core/extensions/l10n_extension.dart';
 import 'package:manager/core/router/app_routes.dart';
 import 'package:manager/data/models/warehouse.dart';
 import 'package:manager/viewmodels/warehouse_viewmodel.dart';
 import 'package:manager/views/widgets/action_bottom_buttons.dart';
-import 'package:manager/views/widgets/app_snackbar.dart';
+import 'package:manager/views/widgets/alerts/top_alert.dart';
 import 'package:manager/views/widgets/custom_popup.dart';
 import 'package:manager/views/widgets/detail/detail_status_badge.dart';
 import 'package:provider/provider.dart';
@@ -33,11 +34,14 @@ class _WarehouseDetailScreenState extends State<WarehouseDetailScreen> {
       final success =
           await context.read<WarehouseViewModel>().deleteWarehouse(w.id);
       if (mounted && success) {
-        AppSnackbar.showSuccess(context, 'Đã xóa kho ${w.name}');
+        TopAlert.success(
+            context,
+            context.l10n.action_success(context.l10n.common_delete,
+                "${context.l10n.warehouse} ${w.name}"));
         context.pop();
       }
     } catch (e) {
-      if (mounted) AppSnackbar.showError(context, 'Lỗi: $e');
+      if (mounted) TopAlert.error(context, 'Lỗi: $e');
     } finally {
       if (mounted) setState(() => _isDeleting = false);
     }
@@ -51,10 +55,8 @@ class _WarehouseDetailScreenState extends State<WarehouseDetailScreen> {
             orElse: () => null,
           ),
       builder: (context, warehouse, _) {
-        // DetailScaffold tự xử lý loading state trong lần đầu.
-        // Nếu sau khi load xong mà vẫn null → hiển thị not-found.
         return DetailScaffold(
-          appBarTitle: 'Chi tiết kho hàng',
+          appBarTitle: context.l10n.warehouse_detail,
           onRefresh: _fetchData,
           bottomBar: warehouse == null
               ? null
@@ -159,14 +161,14 @@ class _WarehouseDetailScreenState extends State<WarehouseDetailScreen> {
   Widget _buildBottomActions(BuildContext context, Warehouse w) {
     return ActionBottomButtons(
       isDeleting: _isDeleting,
-      editText: 'Chỉnh sửa',
-      deleteText: 'Xóa kho',
+      editText: context.l10n.warehouse_edit,
+      deleteText: context.l10n.warehouse_delete,
       onDelete: () => showPopup(
         context: context,
+        onCancelPressed: () {},
         onOkPressed: () => _onConfirmDelete(w),
-        content:
-            'Bạn có chắc chắn muốn xóa kho "${w.name}"? Hành động này không thể hoàn tác.',
-        title: 'Xác nhận xóa',
+        content: context.l10n.confirmDeleteItem(w.name.toLowerCase()),
+        title: context.l10n.common_confirm,
         type: AlertType.warning,
       ),
       onEdit: () => context.push(

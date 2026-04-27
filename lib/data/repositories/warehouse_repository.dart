@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:manager/core/services/api_service.dart';
 import 'package:manager/data/models/warehouse.dart';
 
@@ -49,6 +50,12 @@ class WarehouseRepository {
       final response =
           await _api.dio.put('/warehouses/$id', data: warehouseData.toJson());
       return Warehouse.fromJson(response.data);
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 422) {
+        debugPrint("Dữ liệu không hợp lệ: ${e.response?.data}");
+        // Thường sẽ thấy: {"errors": {"name": ["Tên kho không được để trống"]}}
+      }
+      throw Exception("Failed to update warehouse: $e");
     } catch (e) {
       throw Exception("Failed to update warehouse: $e");
     }

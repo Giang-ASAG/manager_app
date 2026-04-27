@@ -2,9 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart'; // Thêm import này
+import 'package:manager/core/extensions/l10n_extension.dart';
 import 'package:manager/core/utils/app_responsive.dart';
+import 'package:manager/data/models/branch.dart';
 import 'package:manager/data/models/warehouse.dart';
+import 'package:manager/viewmodels/branch_viewmodel.dart';
 import 'package:manager/viewmodels/warehouse_viewmodel.dart';
+import 'package:manager/views/widgets/alerts/top_alert.dart';
 import 'package:manager/views/widgets/app_button.dart';
 import 'package:manager/views/widgets/app_sliver_app_bar.dart';
 import 'package:manager/views/widgets/app_snackbar.dart';
@@ -38,19 +42,13 @@ class _WarehouseFormScreenState extends State<WarehouseFormScreen>
   late Animation<double> _fadeAnim;
   late Animation<Offset> _slideAnim;
 
+  Branch? selectedBranch;
+
   @override
   void initState() {
     super.initState();
 
-    _animController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 500),
-    );
-    _fadeAnim = CurvedAnimation(parent: _animController, curve: Curves.easeIn);
-    _slideAnim = Tween<Offset>(begin: const Offset(0, 0.05), end: Offset.zero)
-        .animate(CurvedAnimation(
-            parent: _animController, curve: Curves.easeOutCubic));
-
+    // Initialize controllers
     codeCtrl = TextEditingController(text: widget.warehouse?.code ?? '');
     nameCtrl = TextEditingController(text: widget.warehouse?.name ?? '');
     phoneCtrl = TextEditingController(text: widget.warehouse?.phone ?? '');
@@ -61,7 +59,39 @@ class _WarehouseFormScreenState extends State<WarehouseFormScreen>
     selectedStatus =
         (status == 'active' || status == 'inactive') ? status : 'active';
 
-    _preparePage();
+    // Setup animations
+    _animController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 500),
+    );
+    _fadeAnim = CurvedAnimation(parent: _animController, curve: Curves.easeIn);
+    _slideAnim = Tween<Offset>(begin: const Offset(0, 0.05), end: Offset.zero)
+        .animate(CurvedAnimation(
+            parent: _animController, curve: Curves.easeOutCubic));
+
+    // Trigger branch loading safely
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final branchVM = context.read<BranchViewModel>();
+      if (branchVM.branches.isEmpty && !branchVM.isLoading) {
+        branchVM.fetchBranches();
+      }
+
+      // Set selected branch for edit mode (after possible fetch)
+      if (_isEditMode && widget.warehouse != null) {
+        _setInitialBranch(branchVM);
+      }
+
+      _preparePage();
+    });
+  }
+
+  void _setInitialBranch(BranchViewModel branchVM) {
+    if (branchVM.branches.isNotEmpty) {
+      selectedBranch = branchVM.branches.firstWhere(
+        (b) => b.id == widget.warehouse!.branchId,
+        orElse: () => branchVM.branches.first,
+      );
+    }
   }
 
   Future<void> _preparePage() async {
@@ -85,11 +115,16 @@ class _WarehouseFormScreenState extends State<WarehouseFormScreen>
 
   Future<void> _submit() async {
     if (_formKey.currentState!.validate()) {
+      if (selectedBranch == null) {
+        TopAlert.error(context, 'Vui lòng chọn chi nhánh');
+        return;
+      }
+
       final vm = context.read<WarehouseViewModel>();
       final warehouseData = Warehouse(
         id: widget.warehouse?.id ?? 0,
-        branchId: widget.warehouse?.branchId ?? 0,
-        branchName: widget.warehouse?.branchName ?? '',
+        branchId: selectedBranch!.id,
+        branchName: selectedBranch!.name,
         code: codeCtrl.text.trim(),
         name: nameCtrl.text.trim(),
         phone: phoneCtrl.text.trim(),
@@ -105,11 +140,17 @@ class _WarehouseFormScreenState extends State<WarehouseFormScreen>
 
       if (mounted) {
         if (success) {
-          AppSnackbar.showSuccess(context,
-              _isEditMode ? 'Cập nhật thành công' : 'Thêm mới thành công');
+          TopAlert.success(
+              context,
+              _isEditMode
+                  ? context.l10n.action_success(
+                      context.l10n.common_edit, context.l10n.warehouse)
+                  : context.l10n.action_success(
+                      context.l10n.common_add, context.l10n.warehouse));
           context.pop();
         } else {
-          AppSnackbar.showError(context, vm.error ?? 'Lỗi hệ thống');
+          debugPrint(vm.error);
+          TopAlert.error(context, vm.error ?? 'Lỗi hệ thống');
         }
       }
     }
@@ -137,8 +178,9 @@ class _WarehouseFormScreenState extends State<WarehouseFormScreen>
                   physics: const BouncingScrollPhysics(),
                   slivers: [
                     AppSliverAppBar(
-                      title:
-                          _isEditMode ? 'Chỉnh sửa kho hàng' : 'Thêm kho hàng',
+                      title: _isEditMode
+                          ? context.l10n.warehouse_edit
+                          : context.l10n.warehouse_add,
                       showBackButton: true,
                       height: 80,
                     ),
@@ -175,6 +217,8 @@ class _WarehouseFormScreenState extends State<WarehouseFormScreen>
                                         validator: (v) => v!.trim().isEmpty
                                             ? 'Vui lòng nhập tên'
                                             : null),
+                                    SizedBox(height: context.rh(14)),
+                                    _buildBranchDropdown(context),
                                   ],
                                 ),
                                 SizedBox(height: context.rh(16)),
@@ -253,6 +297,102 @@ class _WarehouseFormScreenState extends State<WarehouseFormScreen>
               ),
             ),
       bottomSheet: _isPageReady ? _buildBottomSave(context, warehouseVM) : null,
+    );
+  }
+
+  Widget _buildBranchDropdown(BuildContext context) {
+    return Consumer<BranchViewModel>(
+      builder: (context, vm, _) {
+        if (vm.isLoading) {
+          return Padding(
+            padding: EdgeInsets.symmetric(vertical: context.rh(12)),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+                SizedBox(width: context.rw(10)),
+                Text("Đang tải chi nhánh..."),
+              ],
+            ),
+          );
+        }
+
+        if (vm.branches.isEmpty) {
+          return Text(
+            "Không có chi nhánh nào",
+            style: TextStyle(color: Theme.of(context).colorScheme.error),
+          );
+        }
+
+        // Auto-select first branch if none selected (for add mode)
+        if (selectedBranch == null && vm.branches.isNotEmpty) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) setState(() => selectedBranch = vm.branches.first);
+          });
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              "Chi nhánh",
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: context.sp(13),
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
+            SizedBox(height: context.rh(7)),
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: context.rw(12)),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surfaceContainerLowest,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .outlineVariant
+                      .withOpacity(0.6),
+                ),
+              ),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<Branch>(
+                  value: selectedBranch,
+                  isExpanded: true,
+                  icon: Icon(Icons.keyboard_arrow_down_rounded,
+                      color: Theme.of(context).colorScheme.tertiary),
+                  items: vm.branches.map((b) {
+                    return DropdownMenuItem(
+                      value: b,
+                      child: Row(
+                        children: [
+                          Icon(Icons.business_rounded,
+                              size: context.sp(18),
+                              color: Theme.of(context).colorScheme.tertiary),
+                          SizedBox(width: context.rw(10)),
+                          Expanded(
+                            child: Text(
+                              b.name,
+                              style: TextStyle(fontSize: context.sp(14)),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    setState(() => selectedBranch = value);
+                  },
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -445,7 +585,7 @@ class _WarehouseFormScreenState extends State<WarehouseFormScreen>
           padding: EdgeInsets.fromLTRB(
               context.rw(16), context.rh(12), context.rw(16), context.rh(12)),
           child: AppButton(
-            text: _isEditMode ? 'Cập nhật kho hàng' : 'Thêm mới',
+            text: context.l10n.warehouse_save,
             isLoading: vm.isLoading,
             onPressed: _submit,
           ),

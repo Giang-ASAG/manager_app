@@ -253,6 +253,48 @@ class AppLocalizationsEn extends AppLocalizations {
   String get debt_manage => 'Manage Debt';
 
   @override
+  String get branch => 'Branch';
+
+  @override
+  String get branch_list => 'Branch list';
+
+  @override
+  String get branch_add => 'Add branch';
+
+  @override
+  String get branch_edit => 'Edit branch';
+
+  @override
+  String get branch_delete => 'Delete branch';
+
+  @override
+  String get branch_save => 'Save branch';
+
+  @override
+  String get branch_detail => 'Branch detail';
+
+  @override
+  String get warehouse => 'Warehouse';
+
+  @override
+  String get warehouse_list => 'Warehouse list';
+
+  @override
+  String get warehouse_add => 'Add warehouse';
+
+  @override
+  String get warehouse_edit => 'Edit warehouse';
+
+  @override
+  String get warehouse_delete => 'Delete warehouse';
+
+  @override
+  String get warehouse_save => 'Save warehouse';
+
+  @override
+  String get warehouse_detail => 'Warehouse detail';
+
+  @override
   String get settings => 'Settings';
 
   @override

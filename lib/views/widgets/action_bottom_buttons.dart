@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:loading_animation_widget/loading_animation_widget.dart';
+import 'package:manager/core/extensions/l10n_extension.dart';
 import 'package:manager/core/utils/app_responsive.dart';
 
 class ActionBottomButtons extends StatelessWidget {
@@ -53,17 +55,13 @@ class ActionBottomButtons extends StatelessWidget {
               child: ElevatedButton.icon(
                 onPressed: isDeleting ? null : onDelete,
                 icon: isDeleting
-                    ? SizedBox(
-                        width: context.sp(18),
-                        height: context.sp(18),
-                        child: const CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
+                    ? LoadingAnimationWidget.staggeredDotsWave(
+                        color: Colors.white,
+                        size: context.sp(28),
                       )
                     : Icon(Icons.delete_rounded, size: context.sp(18)),
                 label: Text(
-                  isDeleting ? "Đang xóa..." : deleteText,
+                  isDeleting ? "" : deleteText,
                 ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: cs.error,

@@ -48,7 +48,7 @@ class Warehouse {
       'phone': phone,
       'address': address,
       'city': city,
-      'status': status,
+      //'status': status,
       'createdAt': createdAt.toIso8601String(),
     };
   }

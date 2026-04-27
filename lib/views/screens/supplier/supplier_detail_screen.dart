@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:manager/core/extensions/l10n_extension.dart';
 import 'package:manager/core/router/app_routes.dart';
 import 'package:manager/data/models/supplier.dart';
 import 'package:manager/viewmodels/supplier_viewmodel.dart';
 import 'package:manager/views/widgets/action_bottom_buttons.dart';
+import 'package:manager/views/widgets/alerts/top_alert.dart';
 import 'package:manager/views/widgets/app_snackbar.dart';
 import 'package:manager/views/widgets/custom_popup.dart';
 
@@ -35,11 +37,14 @@ class _SupplierDetailScreenState extends State<SupplierDetailScreen> {
       final success =
           await context.read<SupplierViewmodel>().deleteSupplier(s.id!);
       if (mounted && success) {
-        AppSnackbar.showSuccess(context, 'Đã xóa nhà cung cấp ${s.name}');
+        TopAlert.success(
+            context,
+            context.l10n.action_success(
+                context.l10n.common_delete, context.l10n.supplier));
         context.pop();
       }
     } catch (e) {
-      if (mounted) AppSnackbar.showError(context, 'Lỗi: $e');
+      if (mounted) TopAlert.error(context, 'Lỗi: $e');
     } finally {
       if (mounted) setState(() => _isDeleting = false);
     }
@@ -55,7 +60,7 @@ class _SupplierDetailScreenState extends State<SupplierDetailScreen> {
       builder: (context, supplier, _) {
         // DetailScaffold tự xử lý loading state, animation, pull-to-refresh
         return DetailScaffold(
-          appBarTitle: 'Chi tiết nhà cung cấp',
+          appBarTitle: context.l10n.supplier_detail,
           onRefresh: _fetchData,
           bottomBar:
               supplier == null ? null : _buildBottomActions(context, supplier),
@@ -153,14 +158,14 @@ class _SupplierDetailScreenState extends State<SupplierDetailScreen> {
   Widget _buildBottomActions(BuildContext context, Supplier s) {
     return ActionBottomButtons(
       isDeleting: _isDeleting,
-      editText: 'Chỉnh sửa',
-      deleteText: 'Xóa nhà cung cấp',
+      editText: context.l10n.supplier_edit,
+      deleteText: context.l10n.supplier_delete,
       onDelete: () => showPopup(
         context: context,
         onOkPressed: () => _onConfirmDelete(s),
-        content:
-            'Bạn có chắc chắn muốn xóa nhà cung cấp "${s.name}"? Hành động này không thể hoàn tác.',
-        title: 'Xác nhận xóa',
+        onCancelPressed: () {},
+        content: context.l10n.confirmDeleteItem(s.name.toLowerCase()),
+        title: context.l10n.common_warning,
         type: AlertType.warning,
       ),
       onEdit: () => context.push(AppRoutes.supplierEdit, extra: s),

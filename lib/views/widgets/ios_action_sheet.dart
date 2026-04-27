@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:manager/core/extensions/l10n_extension.dart';
+import 'package:manager/views/widgets/alerts/top_alert.dart';
 import 'package:manager/views/widgets/app_snackbar.dart';
 import 'package:manager/views/widgets/custom_popup.dart';
 import 'package:rflutter_alert/rflutter_alert.dart';
@@ -52,7 +53,7 @@ Future<void> showIosActionSheet({
                 final success = await onDelete();
 
                 if (success) {
-                  AppSnackbar.showSuccess(
+                  TopAlert.success(
                     parentContext,
                     parentContext.l10n.action_success(
                       parentContext.l10n.common_delete,
@@ -60,7 +61,7 @@ Future<void> showIosActionSheet({
                     ),
                   );
                 } else {
-                  AppSnackbar.showError(
+                  TopAlert.error(
                     parentContext,
                     parentContext.l10n.action_failed(
                       parentContext.l10n.common_delete,

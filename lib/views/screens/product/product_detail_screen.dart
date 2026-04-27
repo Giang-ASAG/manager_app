@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:manager/core/extensions/l10n_extension.dart';
+import 'package:manager/core/extensions/string_extension.dart';
 import 'package:manager/core/router/app_routes.dart';
 import 'package:manager/core/utils/app_responsive.dart';
 import 'package:manager/data/models/product.dart';
 import 'package:manager/viewmodels/product_viewmodel.dart';
 import 'package:manager/views/widgets/action_bottom_buttons.dart';
+import 'package:manager/views/widgets/alerts/top_alert.dart';
 import 'package:manager/views/widgets/app_snackbar.dart';
 import 'package:manager/views/widgets/custom_popup.dart';
-
 import 'package:manager/views/widgets/detail/detail_status_badge.dart';
 import 'package:provider/provider.dart';
 import 'package:rflutter_alert/rflutter_alert.dart';
@@ -27,8 +29,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   bool _isDeleting = false;
 
   Future<void> _fetchData() async {
-    // Gọi refresh danh sách sản phẩm từ ViewModel nếu cần
-    await context.read<ProductViewModel>().fetchProducts();
+    //await context.read<ProductViewModel>().fetchProducts();
   }
 
   Future<void> _handleDelete(Product p) async {
@@ -37,11 +38,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       final success =
           await context.read<ProductViewModel>().deleteProduct(p.id);
       if (mounted && success) {
-        AppSnackbar.showSuccess(context, "Đã xóa sản phẩm ${p.name}");
+        TopAlert.success(
+            context, context.l10n.confirmDeleteItem(p.name.toLowerCase()));
         context.pop();
       }
     } catch (e) {
-      if (mounted) AppSnackbar.showError(context, "Không thể xóa sản phẩm này");
+      if (mounted) TopAlert.success(context, "Không thể xóa sản phẩm này");
     } finally {
       if (mounted) setState(() => _isDeleting = false);
     }
@@ -56,21 +58,21 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           ),
       builder: (context, product, _) {
         return DetailScaffold(
-          appBarTitle: 'Chi tiết sản phẩm',
+          appBarTitle: context.l10n.product_detail,
           onRefresh: _fetchData,
           bottomBar: product == null
               ? null
               : ActionBottomButtons(
                   isDeleting: _isDeleting,
-                  editText: 'Chỉnh sửa',
-                  deleteText: 'Xóa sản phẩm',
+                  editText: context.l10n.product_edit.capitalizeFirstOnly(),
+                  deleteText: context.l10n.product_delete.capitalizeFirstOnly(),
                   onDelete: () => showPopup(
                     context: context,
-                    title: "Xác nhận xóa",
-                    content:
-                        "Bạn có chắc chắn muốn xóa sản phẩm ${product.name}?",
+                    title: context.l10n.common_warning.capitalizeFirstOnly(),
+                    content: context.l10n.confirmDeleteItem(product.name),
                     type: AlertType.warning,
                     onOkPressed: () => _handleDelete(product),
+                    onCancelPressed: () {},
                   ),
                   onEdit: () =>
                       context.push(AppRoutes.productEdit, extra: product),
@@ -88,7 +90,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     final cs = Theme.of(context).colorScheme;
 
     return [
-      // Hero Card (thông tin chung + giá)
+      // Hero Card
       SliverToBoxAdapter(
         child: DetailHeroCard(
           icon: Icons.inventory_2_rounded,
@@ -98,10 +100,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             children: [
               if (product.sku != null && product.sku!.isNotEmpty)
                 Padding(
-                  padding: const EdgeInsets.only(bottom: 4),
+                  padding: EdgeInsets.only(bottom: context.rh(4)),
                   child: Text(
                     "SKU: ${product.sku}",
-                    style: TextStyle(color: cs.outline, fontSize: 12),
+                    style: TextStyle(
+                      color: cs.outline,
+                      fontSize: context.sp(12),
+                    ),
                   ),
                 ),
               DetailStatusBadge(status: StatusConfig.activeInactive(isActive)),
@@ -110,7 +115,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         ),
       ),
 
-      // Giá nhập & bán (dùng DetailInfoSection)
+      // Giá nhập & bán
       SliverToBoxAdapter(
         child: DetailInfoSection(
           title: 'Giá cả',
@@ -126,15 +131,18 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               value: '${_currencyFormat.format(product.sellingPrice)} ₫',
               valueWidget: Text(
                 '${_currencyFormat.format(product.sellingPrice)} ₫',
-                style:
-                    TextStyle(fontWeight: FontWeight.bold, color: cs.primary),
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: context.sp(14),
+                  color: cs.primary,
+                ),
               ),
             ),
           ],
         ),
       ),
 
-      // Thông số kỹ thuật (chỉ hiển thị nếu có dữ liệu)
+      // Thông số kỹ thuật
       if (_hasSpecifications(product))
         SliverToBoxAdapter(
           child: DetailInfoSection(
@@ -142,20 +150,23 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             children: [
               if (product.weight != null)
                 DetailInfoRow(
-                    icon: Icons.fitness_center_rounded,
-                    label: 'Trọng lượng',
-                    value: '${product.weight} kg'),
+                  icon: Icons.fitness_center_rounded,
+                  label: 'Trọng lượng',
+                  value: '${product.weight} kg',
+                ),
               if (product.thickness != null && product.thickness!.isNotEmpty)
                 DetailInfoRow(
-                    icon: Icons.straighten_rounded,
-                    label: 'Độ dày',
-                    value: product.thickness),
+                  icon: Icons.straighten_rounded,
+                  label: 'Độ dày',
+                  value: product.thickness,
+                ),
               if (product.specifications != null &&
                   product.specifications!.isNotEmpty)
                 DetailInfoRow(
-                    icon: Icons.description_rounded,
-                    label: 'Thông số khác',
-                    value: product.specifications),
+                  icon: Icons.description_rounded,
+                  label: 'Thông số khác',
+                  value: product.specifications,
+                ),
             ],
           ),
         ),
@@ -166,21 +177,25 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           title: 'Đơn vị & Tồn kho',
           children: [
             DetailInfoRow(
-                icon: Icons.scale_rounded,
-                label: 'Đơn vị tính',
-                value: product.unit ?? '—'),
+              icon: Icons.scale_rounded,
+              label: 'Đơn vị tính',
+              value: product.unit ?? '—',
+            ),
             DetailInfoRow(
-                icon: Icons.receipt_rounded,
-                label: 'Đơn vị hóa đơn',
-                value: product.billableUnit ?? '—'),
+              icon: Icons.receipt_rounded,
+              label: 'Đơn vị hóa đơn',
+              value: product.billableUnit ?? '—',
+            ),
             DetailInfoRow(
-                icon: Icons.backpack,
-                label: 'Quy cách',
-                value: product.packagingUnit ?? '—'),
+              icon: Icons.backpack,
+              label: 'Quy cách',
+              value: product.packagingUnit ?? '—',
+            ),
             DetailInfoRow(
-                icon: Icons.numbers_rounded,
-                label: 'Số lượng/gói',
-                value: product.unitsPerPack?.toString() ?? '—'),
+              icon: Icons.numbers_rounded,
+              label: 'Số lượng/gói',
+              value: product.unitsPerPack?.toString() ?? '—',
+            ),
           ],
         ),
       ),
@@ -193,7 +208,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             children: [
               Text(
                 product.description!,
-                style: TextStyle(height: 1.5, fontSize: 13),
+                style: TextStyle(
+                  height: 1.5,
+                  fontSize: context.sp(13),
+                ),
               ),
             ],
           ),
@@ -208,8 +226,15 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   }
 
   Widget _buildNotFound() {
-    return const SliverFillRemaining(
-      child: Center(child: Text('Sản phẩm không tồn tại hoặc đã bị xóa')),
+    return SliverFillRemaining(
+      child: Center(
+        child: Builder(
+          builder: (context) => Text(
+            'Sản phẩm không tồn tại hoặc đã bị xóa',
+            style: TextStyle(fontSize: context.sp(14)),
+          ),
+        ),
+      ),
     );
   }
 }

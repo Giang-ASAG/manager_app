@@ -132,6 +132,22 @@
   "inventory_manage": "Quản lý kho",
   "debt_manage": "Quản lý công nợ",
 
+  "branch": "Chi nhánh",
+  "branch_list": "Danh sách chi nhánh",
+  "branch_add": "Thêm chi nhánh",
+  "branch_edit": "Sửa chi nhánh",
+  "branch_delete": "Xóa chi nhánh",
+  "branch_save": "Lưu chi nhánh",
+  "branch_detail": "Chi tiết chi nhánh",
+
+  "warehouse": "Kho",
+  "warehouse_list": "Danh sách kho",
+  "warehouse_add": "Thêm kho",
+  "warehouse_edit": "Sửa kho",
+  "warehouse_delete": "Xóa kho",
+  "warehouse_save": "Lưu kho",
+  "warehouse_detail": "Chi tiết kho",
+
   "settings": "Cài đặt",
 
   "message_success": "Thành công",

@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
+import 'package:manager/core/extensions/l10n_extension.dart';
 import 'package:manager/core/router/app_routes.dart';
 import 'package:manager/data/models/warehouse.dart';
 import 'package:manager/viewmodels/warehouse_viewmodel.dart';
@@ -111,7 +112,7 @@ class _WarehouseListScreenState extends State<WarehouseListScreen>
                 slivers: [
                   // ==================== HEADER ====================
                   AppSliverAppBar(
-                    title: 'Kho hàng',
+                    title: context.l10n.warehouse,
                     showBackButton: true,
                     height: 150,
                     actions: [
@@ -133,7 +134,7 @@ class _WarehouseListScreenState extends State<WarehouseListScreen>
                     sliver: SliverList(
                       delegate: SliverChildListDelegate([
                         AppSummaryCard(
-                          label: 'Danh sách kho hàng',
+                          label: context.l10n.warehouse_list,
                           value: "${filtered.length}",
                           icon: Icons.warehouse_outlined,
                           color: Colors.blue,

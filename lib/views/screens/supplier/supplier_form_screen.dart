@@ -4,6 +4,7 @@ import 'package:manager/core/extensions/l10n_extension.dart';
 import 'package:manager/core/utils/app_responsive.dart';
 import 'package:manager/data/models/supplier.dart';
 import 'package:manager/viewmodels/supplier_viewmodel.dart';
+import 'package:manager/views/widgets/alerts/top_alert.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart'; // Thêm import
@@ -106,17 +107,15 @@ class _SupplierFormScreenState extends State<SupplierFormScreen>
 
       if (mounted) {
         if (success) {
-          AppSnackbar.showSuccess(
-            context,
-            _isEditMode
-                ? context.l10n.action_success(
-                    context.l10n.common_edit, context.l10n.supplier)
-                : context.l10n.action_success(
-                    context.l10n.common_add, context.l10n.supplier),
+          TopAlert.success(context, _isEditMode
+              ? context.l10n.action_success(
+              context.l10n.common_edit, context.l10n.supplier)
+              : context.l10n.action_success(
+              context.l10n.common_add, context.l10n.supplier),
           );
           context.pop();
         } else {
-          AppSnackbar.showError(context, supplierVM.error ?? 'Lỗi hệ thống');
+          TopAlert.error(context, supplierVM.error ?? 'Lỗi hệ thống');
         }
       }
     }

@@ -566,6 +566,90 @@ abstract class AppLocalizations {
   /// **'Manage Debt'**
   String get debt_manage;
 
+  /// No description provided for @branch.
+  ///
+  /// In en, this message translates to:
+  /// **'Branch'**
+  String get branch;
+
+  /// No description provided for @branch_list.
+  ///
+  /// In en, this message translates to:
+  /// **'Branch list'**
+  String get branch_list;
+
+  /// No description provided for @branch_add.
+  ///
+  /// In en, this message translates to:
+  /// **'Add branch'**
+  String get branch_add;
+
+  /// No description provided for @branch_edit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit branch'**
+  String get branch_edit;
+
+  /// No description provided for @branch_delete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete branch'**
+  String get branch_delete;
+
+  /// No description provided for @branch_save.
+  ///
+  /// In en, this message translates to:
+  /// **'Save branch'**
+  String get branch_save;
+
+  /// No description provided for @branch_detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Branch detail'**
+  String get branch_detail;
+
+  /// No description provided for @warehouse.
+  ///
+  /// In en, this message translates to:
+  /// **'Warehouse'**
+  String get warehouse;
+
+  /// No description provided for @warehouse_list.
+  ///
+  /// In en, this message translates to:
+  /// **'Warehouse list'**
+  String get warehouse_list;
+
+  /// No description provided for @warehouse_add.
+  ///
+  /// In en, this message translates to:
+  /// **'Add warehouse'**
+  String get warehouse_add;
+
+  /// No description provided for @warehouse_edit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit warehouse'**
+  String get warehouse_edit;
+
+  /// No description provided for @warehouse_delete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete warehouse'**
+  String get warehouse_delete;
+
+  /// No description provided for @warehouse_save.
+  ///
+  /// In en, this message translates to:
+  /// **'Save warehouse'**
+  String get warehouse_save;
+
+  /// No description provided for @warehouse_detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Warehouse detail'**
+  String get warehouse_detail;
+
   /// No description provided for @settings.
   ///
   /// In en, this message translates to:
