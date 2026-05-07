@@ -1,16 +1,119 @@
-# manager
+# ERP & Business Management App
 
-A new Flutter project.
+A modern Flutter-based ERP and business management application designed to simplify and optimize daily business operations such as sales, inventory, warehouse, customer, supplier, and branch management.
 
-## Getting Started
+## ✨ Features
 
-This project is a starting point for a Flutter application.
+- Authentication & Authorization
+- Invoice & Sales Management
+- Product & Category Management
+- Warehouse & Inventory Management
+- Branch Management
+- Customer & Supplier Management
+- Search & Filter Functionality
+- Multi-language Support
+- Dynamic Theme Support
+- Responsive UI Design
+- RESTful API Integration
 
-A few resources to get you started if this is your first Flutter project:
+---
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+## 🛠 Tech Stack
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+- Flutter
+- Dart
+- MVVM Architecture
+- Provider (State Management)
+- Dio (HTTP Client)
+- RESTful APIs
+- Localization
+- Flutter Dotenv
+
+---
+
+## 📁 Project Structure
+
+```bash
+lib/
+├── config/
+├── data/
+├── l10n/
+├── view/
+├── viewmodels/
+```
+
+---
+
+## ⚙️ Environment Configuration
+
+Create a `.env` file in the root directory:
+
+```env
+API_URL=https://your-api-url.com
+APP_NAME=QH Manage App
+APP_ENV=development
+```
+
+---
+
+## 🚀 Getting Started
+
+### 1. Clone Repository
+
+```bash
+git clone https://github.com/Giang-ASAG/manager_app.git
+```
+
+### 2. Install Dependencies
+
+```bash
+flutter pub get
+```
+
+### 3. Run Application
+
+```bash
+flutter run
+```
+
+---
+
+## 📌 Requirements
+
+- Flutter SDK >= 3.x.x
+- Dart SDK >= 3.x.x
+- Android Studio / VS Code
+
+---
+
+## 🧱 Architecture
+
+This project follows the **MVVM (Model–View–ViewModel)** architecture to improve scalability, maintainability, and clean separation of concerns.
+
+---
+
+## 🔄 State Management
+
+Provider is used for reactive and efficient application state management.
+
+---
+
+## 🌐 Networking
+
+Dio is used for handling API communication:
+- GET
+- POST
+- PUT
+- DELETE
+
+---
+
+## 📸 Screenshots
+
+_Add screenshots or demo GIFs here._
+
+---
+
+## 👨‍💻 Author
+
+Developed by Giang
