@@ -106,11 +106,6 @@ Dio is used for handling API communication:
 - PUT
 - DELETE
 
----
-
-## 📸 Screenshots
-
-_Add screenshots or demo GIFs here._
 
 ---
 
